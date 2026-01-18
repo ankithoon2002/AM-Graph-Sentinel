@@ -1,1 +1,5 @@
-
+streamlit
+matplotlib
+torch
+torch-geometric
+networkx
