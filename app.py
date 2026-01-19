@@ -1,7 +1,7 @@
 import streamlit as st
 # Code ke ekdum shuruat mein jodiye
 if 'page' not in st.session_state:
-    st.session_state.page = "Home"
+    st.session_state.nav_page = "Home"
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -223,6 +223,7 @@ if st.session_state.nav_page == "Settings":
 # --- 9. FOOTER ---
 st.divider()
 st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5")
+
 
 
 
