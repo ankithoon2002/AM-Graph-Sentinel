@@ -107,7 +107,8 @@ else:
         st.subheader("Live System Monitor")
         st.table(generate_live_data())
 # --- 6. PAGE LOGIC: ANALYTICS ---
-elif st.session_state.nav_page == 'Analytics':
+elif 
+    st.session_state.nav_page == 'Analytics':
     st.markdown('<div class="main-header">📊 Fraud Analytics & Performance</div>', unsafe_allow_html=True)
     
     # Interactive Graph
@@ -222,6 +223,7 @@ if st.session_state.nav_page == "Settings":
 # --- 9. FOOTER ---
 st.divider()
 st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5")
+
 
 
 
