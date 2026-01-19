@@ -179,4 +179,5 @@ elif st.session_state.nav_page == 'About':
 
 # --- 9. FOOTER ---
 st.divider()
-st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5"
+st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5")
+
