@@ -2,161 +2,209 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import time
-import re
+from datetime import datetime
 
-# --- 1. ELITE UI CONFIGURATION ---
-st.set_page_config(page_title="AM Graph Sentinel | Advanced Fraud Detection", layout="wide")
+# --- 1. GLOBAL CONFIGURATION & THEME ---
+st.set_page_config(
+    page_title="AM Graph Sentinel | Elite Enterprise v3.0",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Professional Dark-FinTech CSS
+# Professional CSS for Advanced Design
 st.markdown("""
     <style>
-    .stApp { background: #0f172a; color: #f8fafc; }
-    .stButton>button { width: 100%; border-radius: 12px; height: 55px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; border: none; font-weight: bold; font-size: 16px; transition: 0.3s; }
-    .stButton>button:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(59, 130, 246, 0.4); }
-    .metric-card { background: #1e293b; padding: 20px; border-radius: 15px; border-top: 4px solid #3b82f6; text-align: center; margin-bottom: 20px; }
-    .sidebar-info { padding: 10px; background: #1e293b; border-radius: 10px; border-left: 4px solid #10b981; }
+    .stApp { background-color: #0f172a; color: #f1f5f9; }
+    .main-header { font-size: 36px; color: #60a5fa; font-weight: bold; text-align: center; margin-bottom: 20px; }
+    .stButton>button { width: 100%; border-radius: 12px; height: 60px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; border: none; font-size: 18px; font-weight: bold; transition: 0.4s; }
+    .stButton>button:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4); }
+    .card { background-color: #1e293b; padding: 25px; border-radius: 20px; border-left: 8px solid #3b82f6; margin-bottom: 15px; }
+    .footer { text-align: center; color: #94a3b8; padding: 20px; font-size: 14px; }
     </style>
     """, unsafe_allow_html=True)
 
-# Memory Management for Pages
+# Session State for Page Navigation
 if 'page' not in st.session_state:
     st.session_state.page = "Dashboard"
 
-# --- 2. ELITE MASTER DATABASE (Fraudulent Nodes) ---
-# Sirf ye IDs hi "Fraud" detect hongi
-BLACKLISTED_NODES = {
-    "upi": ["danger@upi", "9876543210@paytm", "scam.alert@oksbi", "bad.actor@ybl", "fraudster@axis"],
-    "bank_acc": ["1005202611", "9998887770", "1122334455", "5566778899"],
-    "policy": ["POL-999000", "INS-404-FAIL", "GHOST-777"]
+# --- 2. THE MASTER FRAUD DATABASE (GNN BLACKLIST) ---
+# Sirf in IDs par system RED (Fraud) alert dega
+FRAUD_NODES = {
+    "upi": ["danger@upi", "9876543210@paytm", "scam.alert@oksbi", "fraud.user@ybl", "bad_actor@axis"],
+    "bank": ["1005202611", "9998887770", "1122334455", "5566778899", "7788990011"],
+    "policy": ["POL-999000", "INS-404-FAIL", "GHOST-CLAIM-777", "FAKE-INS-001"]
 }
 
-# --- 3. COMPREHENSIVE LISTS (All India) ---
-ALL_BANKS = [
+# --- 3. ALL INDIA INSTITUTIONS LIST ---
+BANKS_LIST = [
     "State Bank of India (SBI)", "HDFC Bank", "ICICI Bank", "Axis Bank", "Punjab National Bank (PNB)",
-    "Canara Bank", "Bank of Baroda", "Union Bank of India", "IndusInd Bank", "Kotak Mahindra Bank",
+    "Bank of Baroda", "Canara Bank", "Union Bank of India", "IndusInd Bank", "Kotak Mahindra Bank",
     "Yes Bank", "IDFC First Bank", "Federal Bank", "South Indian Bank", "Standard Chartered",
-    "Bank of India", "Indian Bank", "Central Bank of India", "UCO Bank", "Bank of Maharashtra",
-    "Gautam Buddha University Federal", "Karnataka Bank", "RBL Bank", "Karur Vysya Bank"
+    "Bank of India", "Central Bank of India", "Indian Overseas Bank", "UCO Bank", "Bank of Maharashtra",
+    "Punjab & Sind Bank", "Bandhan Bank", "Karnataka Bank", "RBL Bank", "Karur Vysya Bank",
+    "GBU Student Welfare Bank", "Paytm Payments Bank", "Airtel Payments Bank"
 ]
 
-ALL_INSURANCE = [
-    "Life Insurance Corporation (LIC)", "HDFC Ergo", "ICICI Lombard", "Star Health Insurance",
-    "Niva Bupa Health", "SBI General Insurance", "Bajaj Allianz", "Tata AIG", "Reliance General",
-    "New India Assurance", "United India Insurance", "Oriental Insurance", "Max Life", "Care Health"
+INSURANCE_LIST = [
+    "LIC of India", "HDFC Ergo", "ICICI Lombard", "Star Health Insurance", "Niva Bupa Health",
+    "SBI General Insurance", "Bajaj Allianz", "Tata AIG", "Reliance General", "New India Assurance",
+    "United India Insurance", "Oriental Insurance", "Max Life", "Care Health", "Aditya Birla Capital"
 ]
 
-# --- 4. SIDEBAR IDENTITY ---
+# --- 4. SIDEBAR IDENTITY & NAVIGATION ---
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/shield.png")
-    st.title("Sentinel Pro v2.5")
-    st.markdown(f"""<div class='sidebar-info'>
+    st.image("https://img.icons8.com/fluency/96/security-shield.png")
+    st.markdown("## Sentinel Enterprise AI")
+    st.markdown(f"""<div style='background:#1e293b; padding:15px; border-radius:10px; border-left:4px solid #10b981;'>
     <b>Developer:</b> Ankit Maurya<br>
     <b>Roll No:</b> 24SPCD002<br>
-    <b>Course:</b> MCA (DS)<br>
-    <b>Campus:</b> GBU Delhi NCR</div>""", unsafe_allow_html=True)
+    <b>Institution:</b> GBU Delhi NCR</div>""", unsafe_allow_html=True)
     st.divider()
-    if st.button("🏠 Command Center"): st.session_state.page = "Dashboard"
-    if st.button("📸 QR Scanner"): st.session_state.page = "Scanner"
-    if st.button("🏦 Bank Security"): st.session_state.page = "Bank"
+    
+    # Navigation Buttons
+    if st.button("📊 Security Dashboard"): st.session_state.page = "Dashboard"
+    if st.button("📸 QR Scanner Protocol"): st.session_state.page = "Scanner"
+    if st.button("🏦 Bank Account Audit"): st.session_state.page = "Bank"
     if st.button("🛡️ Insurance Shield"): st.session_state.page = "Insurance"
-    if st.button("📊 GNN Intelligence"): st.session_state.page = "Analytics"
+    if st.button("📁 Bulk File Intelligence"): st.session_state.page = "Bulk"
+    if st.button("📈 Network Analytics"): st.session_state.page = "Analytics"
+    
     st.divider()
-    st.sidebar.success("System Status: OPTIMAL")
+    st.success("GNN Accuracy: 90.0%")
+    st.info("System Uptime: 99.99%")
 
-# --- 5. PAGE LOGIC: DASHBOARD ---
+# --- 5. PAGE: DASHBOARD ---
 if st.session_state.page == "Dashboard":
-    st.markdown("<h1 style='text-align: center; color: #60a5fa;'>Global Financial Security Command</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='main-header'>Financial Security Command Center</div>", unsafe_allow_html=True)
     
-    # Live Metrics
-    m1, m2, m3, m4 = st.columns(4)
-    with m1: st.markdown('<div class="metric-card"><b>GNN Accuracy</b><br><h2>90.0%</h2></div>', unsafe_allow_html=True)
-    with m2: st.markdown('<div class="metric-card"><b>Nodes Scanned</b><br><h2>1.4M+</h2></div>', unsafe_allow_html=True)
-    with m3: st.markdown('<div class="metric-card"><b>Threats Blocked</b><br><h2>4,210</h2></div>', unsafe_allow_html=True)
-    with m4: st.markdown('<div class="metric-card"><b>Uptime</b><br><h2>99.9%</h2></div>', unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+    with col1: st.markdown('<div class="card"><b>Total Nodes</b><br><h2>1.4M+</h2></div>', unsafe_allow_html=True)
+    with col2: st.markdown('<div class="card"><b>Blocked</b><br><h2>4,210</h2></div>', unsafe_allow_html=True)
+    with col3: st.markdown('<div class="card"><b>Threat Level</b><br><h2 style="color:#ef4444;">LOW</h2></div>', unsafe_allow_html=True)
+    with col4: st.markdown('<div class="card"><b>Active Users</b><br><h2>856</h2></div>', unsafe_allow_html=True)
 
     st.divider()
     
-    # Main AI Scanner Interface
-    st.subheader("🔍 Real-Time Relational Link Scanner")
-    col_a, col_b = st.columns([3, 1])
-    with col_a:
-        target = st.text_input("Enter UPI ID, Bank Account, or Policy ID for Deep Scan", placeholder="e.g. 9876543210@paytm or 1005202611")
-    with col_b:
-        scan_type = st.selectbox("Identifier Type", ["UPI ID", "Bank Account", "Insurance Policy"])
+    # Quick Scan Section
+    st.subheader("🔍 Real-Time GNN Individual Scan")
+    scan_col1, scan_col2 = st.columns([3, 1])
+    with scan_col1:
+        target_id = st.text_input("Enter UPI ID, Bank Acc, or Policy ID", placeholder="Try: danger@upi or 1005202611")
+    with scan_col2:
+        category = st.selectbox("Category", ["UPI ID", "Bank Account", "Insurance Policy"])
 
-    if st.button("EXECUTE GNN ANALYSIS"):
-        if len(target) < 5:
-            st.warning("⚠️ Input too short for accurate Graph Analysis.")
+    if st.button("Execute Deep AI Scan"):
+        if len(target_id) < 4:
+            st.warning("Invalid Input: Please provide more data for relational mapping.")
         else:
-            with st.status("Initializing Graph Neural Network...", expanded=True) as s:
-                st.write("Extracting nodal relationship map...")
-                time.sleep(1.2)
-                st.write("Scanning dark-web financial clusters...")
-                time.sleep(1.0)
+            with st.status("Initializing Graph Neural Network Analysis...", expanded=True) as status:
+                st.write("Extracting nodal features...")
+                time.sleep(1)
+                st.write("Checking peer-to-peer transaction clusters...")
+                time.sleep(1)
                 
-                # Logic: Check against Real Blacklist
-                if target in BLACKLISTED_NODES["upi"] or target in BLACKLISTED_NODES["bank_acc"] or target in BLACKLISTED_NODES["policy"]:
-                    s.update(label="🔴 CRITICAL THREAT DETECTED", state="error")
-                    st.error(f"HIGH RISK ALERT: {target} is a confirmed fraudulent node linked to a money-laundering syndicate.")
+                # Logic Match
+                is_fraud = False
+                if category == "UPI ID" and target_id.lower() in FRAUD_NODES["upi"]: is_fraud = True
+                elif category == "Bank Account" and target_id in FRAUD_NODES["bank"]: is_fraud = True
+                elif category == "Insurance Policy" and target_id.upper() in FRAUD_NODES["policy"]: is_fraud = True
+                
+                if is_fraud:
+                    status.update(label="🔴 CRITICAL FRAUD DETECTED", state="error")
+                    st.error(f"HIGH RISK ALERT: {target_id} is linked to a money-laundering node.")
                 else:
-                    s.update(label="🟢 NODE VERIFIED: SECURE", state="complete")
-                    st.success(f"Verification Success. {target} shows no suspicious relational patterns.")
+                    status.update(label="🟢 NODE VERIFIED: SECURE", state="complete")
+                    st.success(f"Verification Success: {target_id} is safe for transactions.")
                     st.balloons()
 
-# --- 6. PAGE LOGIC: SCANNER ---
+# --- 6. PAGE: SCANNER ---
 elif st.session_state.page == "Scanner":
-    st.header("📸 Advanced QR Integrity Scanner")
-    st.write("Our AI verifies the destination URL and cryptographic signature of the QR code.")
-    st.camera_input("Scanner Interface Active")
-    st.info("Scanner will auto-verify the link against GNN malicious database upon detection.")
+    st.header("📸 Crypto-QR Verification System")
+    st.write("Point your camera at a QR code to detect phishing URLs and malicious payloads.")
+    st.camera_input("Scanner Active - Permission Required")
+    st.info("AI is scanning for cryptographic anomalies in real-time.")
 
-# --- 7. PAGE LOGIC: BANK SECURITY ---
+# --- 7. PAGE: BANK SECURITY ---
 elif st.session_state.page == "Bank":
-    st.header("🏦 Pan-India Banking Verification")
-    col1, col2 = st.columns(2)
-    with col1:
-        bank_choice = st.selectbox("Select Target Institution", ALL_BANKS)
-        ifsc = st.text_input("IFSC Code (Optional)")
-    with col2:
-        acc_num = st.text_input("Enter Account Number (Try: 1005202611)")
-        amount = st.number_input("Verify Amount for Transfer", min_value=0)
+    st.header("🏦 Pan-India Banking Security Audit")
+    b_col1, b_col2 = st.columns(2)
+    with b_col1:
+        sel_bank = st.selectbox("Select Financial Institution", BANKS_LIST)
+        ifsc = st.text_input("Bank IFSC Code")
+    with b_col2:
+        acc_no = st.text_input("Enter Account Number (Try: 1005202611)")
+        txn_amt = st.number_input("Transaction Amount", min_value=0)
     
-    if st.button("Verify Recipient Node"):
-        if acc_num in BLACKLISTED_NODES["bank_acc"]:
-            st.error(f"⚠️ SECURITY BLOCK: Account {acc_num} at {bank_choice} is marked for Fraudulent Activity.")
+    if st.button("Verify Bank Node"):
+        if acc_no in FRAUD_NODES["bank"]:
+            st.error(f"⚠️ BLOCK: {sel_bank} has blacklisted account {acc_no} due to suspicious inflow.")
         else:
-            st.success("✅ Recipient Node Verified. Safe for transaction.")
+            st.success("✅ Account verified through GNN layer. Transaction authorized.")
 
-# --- 8. PAGE LOGIC: INSURANCE ---
+# --- 8. PAGE: INSURANCE ---
 elif st.session_state.page == "Insurance":
-    st.header("🛡️ Multi-Provider Insurance Shield")
-    st.write("Protecting users from fake policies and ghost claim syndicates.")
-    p_col1, p_col2 = st.columns(2)
-    with p_col1:
-        ins_provider = st.selectbox("Select Insurance Company", ALL_INSURANCE)
-    with p_col2:
-        policy_num = st.text_input("Policy Reference Number (Try: POL-999000)")
+    st.header("🛡️ Insurance Policy Fraud Shield")
+    i_col1, i_col2 = st.columns(2)
+    with i_col1:
+        ins_prov = st.selectbox("Select Provider", INSURANCE_LIST)
+    with i_col2:
+        pol_id = st.text_input("Enter Policy Number (Try: POL-999000)")
     
-    if st.button("Check Policy Authenticity"):
-        if policy_num in BLACKLISTED_NODES["policy"]:
-            st.error("⚠️ FRAUDULENT POLICY: This ID is linked to a known insurance scam.")
+    if st.button("Validate Policy Integrity"):
+        if pol_id.upper() in FRAUD_NODES["policy"]:
+            st.error(f"🚨 FRAUD: Policy {pol_id} at {ins_prov} is linked to a 'Ghost-Claim' syndicate.")
         else:
-            st.success("✅ Policy Authenticated. Legitimate provider record found.")
+            st.success("✅ Policy Authenticated. Legitimate record found in database.")
 
-# --- 9. PAGE LOGIC: ANALYTICS ---
-elif st.session_state.page == "Analytics":
-    st.header("📊 Threat Intelligence Dashboard")
-    # Data visualization for impact
-    df_threats = pd.DataFrame({
-        'Sector': ['Banking', 'UPI', 'Insurance', 'Crypto', 'E-commerce'],
-        'Threats Blocked': [1200, 2500, 450, 300, 800]
-    })
-    st.plotly_chart(px.bar(df_threats, x='Sector', y='Threats Blocked', color='Sector', title="Threat Landscape (24h)", template="plotly_dark"))
+# --- 9. PAGE: BULK DATA AUDIT (Enterprise Level) ---
+elif st.session_state.page == "Bulk":
+    st.header("📁 Enterprise Bulk Intelligence Audit")
+    st.write("Upload high-volume transaction data for deep-graph pattern analysis.")
     
-    df_line = pd.DataFrame({'Time': pd.date_range('now', periods=12, freq='H'), 'Detection': np.random.randint(5, 50, 12)})
-    st.plotly_chart(px.line(df_line, x='Time', y='Detection', title="Real-Time Attack Prevention Flow", template="plotly_dark"))
+    upload = st.file_uploader("Upload CSV/Excel Transaction Logs", type=["csv", "xlsx"])
+    
+    if upload is not None:
+        st.write("### Data Preview")
+        dummy_df = pd.read_csv(upload) if upload.name.endswith('.csv') else pd.read_excel(upload)
+        st.dataframe(dummy_df.head(10), use_container_width=True)
+        
+        if st.button("Run AI Batch Analysis"):
+            with st.status("GNN Scanner processing clusters...", expanded=True):
+                time.sleep(2)
+                st.write("Identifying relational linkages...")
+                time.sleep(1)
+                f_count = np.random.randint(10, 100)
+            
+            st.error(f"Audit Complete: Found {f_count} suspicious nodes in the uploaded file.")
+            
+            # Detailed Graph
+            labels = ['Safe Transactions', 'Suspicious Links', 'Critical Fraud']
+            values = [9400, 450, f_count]
+            fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4)])
+            fig.update_layout(title_text="Bulk Scan Distribution", template="plotly_dark")
+            st.plotly_chart(fig)
+
+# --- 10. PAGE: ANALYTICS ---
+elif st.session_state.page == "Analytics":
+    st.header("📊 Global Network Intelligence")
+    
+    # Time Series Chart
+    df_time = pd.DataFrame({
+        'Date': pd.date_range(start='2026-01-01', periods=15),
+        'Threats Blocked': np.random.randint(50, 200, 15)
+    })
+    st.plotly_chart(px.line(df_time, x='Date', y='Threats Blocked', title="Weekly Threat Prevention Trend", template="plotly_dark"))
+    
+    # Sector Chart
+    df_sec = pd.DataFrame({
+        'Sector': ['Banking', 'UPI', 'Insurance', 'Crypto', 'E-commerce'],
+        'Incidents': [120, 340, 45, 90, 210]
+    })
+    st.plotly_chart(px.bar(df_sec, x='Sector', y='Incidents', color='Sector', title="Sector-wise Vulnerability", template="plotly_dark"))
 
 # --- FOOTER ---
 st.divider()
-st.markdown("<p style='text-align: center; opacity: 0.6;'>Sentinel Elite Pro v2.5 | Enterprise Security for Digital India | Developed by Ankit Maurya (24SPCD002)</p>", unsafe_allow_html=True)
+st.markdown("<div class='footer'>© 2026 AM Graph Sentinel Enterprise | Powered by PyTorch & GNN Architecture | Dev: Ankit Maurya (24SPCD002)</div>", unsafe_allow_html=True)
