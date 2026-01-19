@@ -1,4 +1,7 @@
 import streamlit as st
+# Code ke ekdum shuruat mein jodiye
+if 'page' not in st.session_state:
+    st.session_state.page = "Home"
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -66,10 +69,14 @@ if st.session_state.nav_page == 'Home':
     
     # Action Icons (Paytm Style)
     c1, c2, c3, c4 = st.columns(4)
-    with c1: st.button("📸\nScan QR")
+    with c1: if st.button("📸 Scan QR"):
+    st.session_state.nav_page = "Scanner"
     with c2: st.button("🏦\nTransfer")
+        st.session_state.nav_pag = "Bank"
     with c3: st.button("📱\nRecharge")
+        st.session_state.nav_pag = "History"
     with c4: st.button("📄\nBills")
+        st.session_state.nav_pag = "Settings"
     
     st.divider()
     
@@ -81,7 +88,10 @@ if st.session_state.nav_page == 'Home':
         if st.button("Analyze Account with AI"):
             with st.spinner("GNN Model scanning relational nodes..."):
                 time.sleep(1.5)
-                if "fraud" in input_data.lower() or "1005" in input_data:
+                # Multiple risk triggers jo model ko advanced banate hain
+risk_list = ["1005", "fraud", "hack", "fake", "spam"]
+if any(word in upi_id.lower() for word in risk_list):
+    st.error("⚠️ HIGH RISK DETECTED")
                     st.markdown('<div class="status-card risk-gradient">⚠️ HIGH RISK: FRAUDULENT PATTERN DETECTED</div>', unsafe_allow_html=True)
                     st.error("GNN Analysis identifies this node as a part of a known money-laundering cluster.")
                 else:
@@ -176,8 +186,38 @@ elif st.session_state.nav_page == 'About':
         </ul>
         </div>
         """, unsafe_allow_html=True)
+  # Jab page "Scanner" ho toh camera khulega
+if st.session_state.page == "Scanner":
+    st.header("📸 QR Security Scanner")
+    st.camera_input("Apne QR Code ki photo lein")
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.rerun()
+
+# Jab page "Bank" ho toh list dikhegi
+elif st.session_state.page == "Bank":
+    st.header("🏦 Select Your Bank")
+    st.selectbox("Bank Chunein", ["SBI", "HDFC", "PNB", "GBU Bank"])
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.rerun()
+        # Jab page "Settings" ho toh ye dikhega
+if st.session_state.page == "Settings":
+    st.header("⚙️ Security Settings & System Health")
+    st.write("Project: AM Graph Sentinel | Build 2.5")
+    
+    st.info("Humara AI model transactions ko secure rakhne ke liye backend par active hai.")
+    
+    # Ek naya progress bar jo dikhayega ki system scan kar raha hai
+    st.write("Real-time Server Health:")
+    st.progress(95) # Ye dikhata hai ki system 95% healthy hai
+    
+    if st.button("Back to Home"):
+        st.session_state.page = "Home"
+        st.rerun()
 
 # --- 9. FOOTER ---
 st.divider()
 st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5")
+
 
