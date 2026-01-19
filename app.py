@@ -69,7 +69,8 @@ if st.session_state.nav_page == 'Home':
     
     # Action Icons (Paytm Style)
     c1, c2, c3, c4 = st.columns(4)
-    with c1: if st.button("📸 Scan QR"):
+    with c1:
+        if st.button("📸 Scan QR"):
     st.session_state.nav_page = "Scanner"
     with c2: st.button("🏦\nTransfer")
         st.session_state.nav_pag = "Bank"
@@ -219,5 +220,6 @@ if st.session_state.page == "Settings":
 # --- 9. FOOTER ---
 st.divider()
 st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5")
+
 
 
