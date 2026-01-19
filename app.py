@@ -72,13 +72,19 @@ if st.session_state.nav_page == 'Home':
   with c1:
     if st.button("📸 Scan QR"):
         st.session_state.page = "Scanner"
-    with c2:
+with c1:
+    if st.button("📸 Scan QR"):
+        st.session_state.page = "Scanner"
+
+with c2:
     if st.button("🏦 Bank"):
         st.session_state.page = "Bank"
-   with c3:
+
+with c3:
     if st.button("📜 History"):
         st.session_state.page = "History"
-    with c4:
+
+with c4:
     if st.button("⚙️ Settings"):
         st.session_state.page = "Settings"
     
@@ -223,6 +229,7 @@ if st.session_state.page == "Settings":
 # --- 9. FOOTER ---
 st.divider()
 st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5")
+
 
 
 
