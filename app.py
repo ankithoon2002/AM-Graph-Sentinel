@@ -71,16 +71,16 @@ if st.session_state.nav_page == 'Home':
     c1, c2, c3, c4 = st.columns(4)
 with c1:
     if st.button("📸 Scan QR"):
-        st.session_state.page = "Scanner"
+        st.session_state.nav_page = "Scanner"
 with c2:
     if st.button("🏦 Bank"):
-        st.session_state.page = "Bank"
+        st.session_state.nav_page = "Bank"
 with c3:
     if st.button("📜 History"):
-        st.session_state.page = "History"
+        st.session_state.nav_page = "History"
 with c4:
     if st.button("⚙️ Settings"):
-        st.session_state.page = "Settings"
+        st.session_state.nav_page = "Settings"
     
     st.divider()
     
@@ -96,12 +96,12 @@ with c4:
 risk_list = ["1005", "fraud", "hack", "fake", "spam"]
 if any(word in upi_id.lower() for word in risk_list):
     st.error("⚠️ HIGH RISK DETECTED")
-                    st.markdown('<div class="status-card risk-gradient">⚠️ HIGH RISK: FRAUDULENT PATTERN DETECTED</div>', unsafe_allow_html=True)
-                    st.error("GNN Analysis identifies this node as a part of a known money-laundering cluster.")
-                else:
-                    st.markdown('<div class="status-card safe-gradient">✅ SECURE: NO RISK DETECTED</div>', unsafe_allow_html=True)
-                    st.success("Our Graph Neural Network has verified all connections for this account.")
-                    st.balloons()
+    st.markdown('<div class="status-card risk-gradient">⚠️ HIGH RISK: FRAUDULENT PATTERN DETECTED</div>', unsafe_allow_html=True)
+    st.error("GNN Analysis identifies this node as a part of a known money-laundering cluster.")
+else:
+    st.markdown('<div class="status-card safe-gradient">✅ SECURE: NO RISK DETECTED</div>', unsafe_allow_html=True)
+    st.success("Our Graph Neural Network has verified all connections for this account.")
+    st.balloons()
     
     with right:
         st.subheader("Live System Monitor")
@@ -191,22 +191,22 @@ elif st.session_state.nav_page == 'About':
         </div>
         """, unsafe_allow_html=True)
   # Jab page "Scanner" ho toh camera khulega
-if st.session_state.page == "Scanner":
+if st.session_state.nav_page == "Scanner":
     st.header("📸 QR Security Scanner")
     st.camera_input("Apne QR Code ki photo lein")
     if st.button("Back to Home"):
-        st.session_state.page = "Home"
+        st.session_state.nav_page = "Home"
         st.rerun()
 
 # Jab page "Bank" ho toh list dikhegi
-elif st.session_state.page == "Bank":
+elif st.session_state.nav_page == "Bank":
     st.header("🏦 Select Your Bank")
     st.selectbox("Bank Chunein", ["SBI", "HDFC", "PNB", "GBU Bank"])
     if st.button("Back to Home"):
-        st.session_state.page = "Home"
+        st.session_state.nav_page = "Home"
         st.rerun()
         # Jab page "Settings" ho toh ye dikhega
-if st.session_state.page == "Settings":
+if st.session_state.nav_page == "Settings":
     st.header("⚙️ Security Settings & System Health")
     st.write("Project: AM Graph Sentinel | Build 2.5")
     
@@ -217,12 +217,13 @@ if st.session_state.page == "Settings":
     st.progress(95) # Ye dikhata hai ki system 95% healthy hai
     
     if st.button("Back to Home"):
-        st.session_state.page = "Home"
+        st.session_state.nav_page = "Home"
         st.rerun()
 
 # --- 9. FOOTER ---
 st.divider()
 st.caption("© 2026 AM Graph Sentinel | Powered by PyTorch & Streamlit | Enterprise Build v2.5")
+
 
 
 
