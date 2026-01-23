@@ -192,4 +192,4 @@ with st.expander("🛠️ PROJECT TECHNICAL ARCHITECTURE (For Viva Discussion)")
     * *Scalability:* Ye system *Billion-scale data* (1.4B+ nodes) ke liye design kiya gaya hai.
     * *Security:* Hashing ke liye SHA-256 aur encryption ke liye AES-256 standard follow kiya gaya hai taaki data 'uncrackable' rahe.
     * *Autonomous Learning:* System naye fraud patterns ko capture karke apne weights ko update karta rehta hai.""")
-    """)
+
