@@ -200,7 +200,20 @@ elif st.session_state.view == 'graph':
     st.header("🕸️ GNN Network Visualizer")
     st.write("Ye module real-time mein 'Hidden Relationships' ko map karta hai.")
     
-    test_id = st.text_input("Enter Node ID", value="ANKIT_24SPCD002")
+    test_id = st.text_input("Enter Node ID", value="ANKIT_245PCD002")
+    st.markdown("🔍 *Scanning Billion-Scale Nodes...*")
+    time.sleep(0.5)
+
+# Fraud Demo Representation
+st.markdown(f"""
+<div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid #38bdf8;'>
+    <p><b>[Node: {test_id}]</b></p>
+    <p> &nbsp; ↳ <span style='color: #00ffcc;'>Edge: Verified IP</span> ---> [Safe_Node]</p>
+    <p> &nbsp; ↳ <span style='color: #ff4b4b;'>Edge: Blacklisted Connection</span> ---> [Fraud_Node_04]</p>
+</div>
+""", unsafe_allow_html=True)
+
+st.error("🚨 GNN ALERT: Suspicious Relational Link Detected!")
     
     if st.button("Map Hidden Links"):
         with st.spinner("AI is tracing multi-hop connections..."):
@@ -226,5 +239,6 @@ with st.expander("🛠️ TECHNICAL EXPLAINER (For Viva Discussion)"):
     with tech_col2:
         st.markdown("*Architecture:* Distributed Infrastructure for 1.4B+ Node load.")
         st.markdown("*Update Logic:* Autonomous learning engine ensures zero-day protection.")
+
 
 
