@@ -213,9 +213,9 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.error("🚨 GNN ALERT: Suspicious Relational Link Detected!)
+st.error("🚨 GNN ALERT: Suspicious Relational Link Detected!")
     
-    if st.button("Map Hidden Links"):
+if st.button("Map Hidden Links"):
         with st.spinner("AI is tracing multi-hop connections..."):
             time.sleep(0.8)
             # Fraud Demo Visualization
@@ -239,6 +239,7 @@ with st.expander("🛠️ TECHNICAL EXPLAINER (For Viva Discussion)"):
     with tech_col2:
         st.markdown("*Architecture:* Distributed Infrastructure for 1.4B+ Node load.")
         st.markdown("*Update Logic:* Autonomous learning engine ensures zero-day protection.")
+
 
 
 
