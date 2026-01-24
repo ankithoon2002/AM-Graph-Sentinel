@@ -16,6 +16,8 @@ st.set_page_config(page_title="AM Graph Sentinel", page_icon="🛡️", layout="
 # Isse interface ekdum high-class aur advanced security product jaisa lagega
 st.markdown("""
     <style>
+    .fraud-text { color: #ff4b4b; font-weight: bold; }
+    .safe-text { color: #00ffcc; font-weight: bold; }
     /* Premium Dark Theme Background */
     .stApp {
         background: radial-gradient(circle, #0f172a 0%, #020617 100%);
@@ -62,8 +64,6 @@ st.markdown("""
     video { border-radius: 20px; border: 2px solid #38bdf8; }
     </style>
     """, unsafe_allow_html=True)
-.fraud-text { color: #ff4b4b; font-weight: bold; }
-.safe-text { color: #00ffcc; font-weight: bold; }
 
 # 3. CORE NAVIGATION ENGINE
 # Isse app "Multi-Page" ki tarah chalti hai (No scrolling confusion)
@@ -226,3 +226,4 @@ with st.expander("🛠️ TECHNICAL EXPLAINER (For Viva Discussion)"):
     with tech_col2:
         st.markdown("*Architecture:* Distributed Infrastructure for 1.4B+ Node load.")
         st.markdown("*Update Logic:* Autonomous learning engine ensures zero-day protection.")
+
