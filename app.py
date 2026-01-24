@@ -196,7 +196,7 @@ elif st.session_state.page == 'bulk':
             st.success("Billion-Scale Audit Complete. 0 Threats Found.")
             
     if st.button("⬅️ Return to Dashboard"): switch_page('home')
-        elif st.session_state.view == 'graph':
+elif st.session_state.view == 'graph':
     st.header("🕸️ GNN Network Visualizer")
     st.write("Ye module real-time mein 'Hidden Relationships' ko map karta hai.")
     
@@ -226,4 +226,5 @@ with st.expander("🛠️ TECHNICAL EXPLAINER (For Viva Discussion)"):
     with tech_col2:
         st.markdown("*Architecture:* Distributed Infrastructure for 1.4B+ Node load.")
         st.markdown("*Update Logic:* Autonomous learning engine ensures zero-day protection.")
+
 
