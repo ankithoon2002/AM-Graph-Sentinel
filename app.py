@@ -202,4 +202,5 @@ with st.expander("🛠️ TECHNICAL EXPLAINER"):
         st.markdown("*Encryption:* SHA-256 with Quantum-Resistant Hashing Protocols.")
     with tech_col2:
         st.markdown("*Architecture:* Distributed Infrastructure for 1.4B+ Node load.")
-        st.markdown("*Update Logic:* Autonomous learning engine ensures zero-day protection."
+        st.markdown("*Update Logic:* Autonomous learning engine ensures zero-day protection.")
+
