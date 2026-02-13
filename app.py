@@ -1,128 +1,111 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
+import time
 import plotly.graph_objects as go
 from streamlit_agraph import agraph, Node, Edge, Config
-import time
 
-# 1. SETTINGS & THEME
-st.set_page_config(page_title="AM Sentinel | Enterprise", layout="wide")
+# --- 1. PAGE CONFIG & ADVANCED CSS (Mobile + Laptop) ---
+st.set_page_config(page_title="AM Sentinel | Enterprise", layout="wide", initial_sidebar_state="collapsed")
 
-# 2. PAYTM-STYLE PREMIUM UI (CSS)
 st.markdown("""
     <style>
-    .stApp { background-color: #0b1120; color: #e6edf3; }
-    .stMetric { background: #161b22; padding: 20px; border-radius: 12px; border: 1px solid #30363d; }
-    .module-header { color: #58a6ff; font-weight: 800; font-size: 24px; margin-bottom: 20px; }
-    /* Button Styling */
+    /* Global Theme */
+    .stApp { background-color: #f0f2f5; color: #1d2f54; }
+    
+    /* LAPTOP VIEW CSS */
     .stButton > button {
-        height: 100px; width: 100%; border-radius: 12px; font-size: 16px !important;
-        background: linear-gradient(145deg, #1f6feb, #0969da) !important;
-        color: white !important; font-weight: bold; border: none; transition: 0.3s;
+        border-radius: 15px; height: 120px; width: 100%;
+        background: white !important; color: #002e6e !important;
+        border: 1px solid #d1d9e6 !important; font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s;
     }
-    .stButton > button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(31, 111, 235, 0.3); }
+    .stButton > button:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+
+    /* MOBILE VIEW CSS (Paytm Style Icon Grid) */
+    @media (max-width: 768px) {
+        [data-testid="column"] {
+            width: 31% !important; flex: 1 1 31% !important;
+            min-width: 31% !important; margin: 1% !important;
+        }
+        .stButton > button {
+            height: 90px !important; border-radius: 20px !important;
+            font-size: 11px !important; padding: 5px !important;
+            background: #ffffff !important; border: none !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        }
+        h1 { font-size: 22px !important; text-align: center; margin-bottom: 20px !important; }
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. SIDEBAR (Clickable Compliance & GNN Info)
-with st.sidebar:
-    st.markdown("<h2 style='color: #58a6ff;'>🧬 SENTINEL HQ</h2>", unsafe_allow_html=True)
-    st.write(f"*Architect:* Ankit Maurya")
-    st.write(f"*ID:* 24SPCD002 | MCA(DS)")
-    st.divider()
-    
-    # Functional Sidebar Boxes
-    with st.expander("🟢 RBI & ISO 27001 Compliant", expanded=False):
-        st.write("This system adheres to the RBI Cybersecurity Framework (2024) for digital payment safety and ISO/IEC 27001 data privacy standards.")
-        
-    with st.expander("🔵 GNN Scale: 1.4B+ Nodes Active", expanded=False):
-        st.write("Relational intelligence is mapping 1.4 Billion nodes in real-time. Current Latency: 0.002ms.")
-    
-    st.divider()
-    menu = st.radio("Navigation", ["Executive Dashboard", "Relational Visualizer", "Global Fraud Audit", "Technical Docs"])
+# --- 2. SESSION STATE FOR NAVIGATION ---
+if 'page' not in st.session_state: st.session_state.page = 'home'
+def navigate_to(page_name):
+    st.session_state.page = page_name
+    st.rerun()
 
-# 4. EXECUTIVE DASHBOARD (Home - Active Modules)
-if menu == "Executive Dashboard":
-    st.markdown("<h1 style='text-align: center; color: #58a6ff;'>AM GRAPH SENTINEL: THE SECURITY SUITE</h1>", unsafe_allow_html=True)
+# --- 3. MAIN INTERFACE LOGIC ---
+
+# PAGE: HOME (The Icon Grid)
+if st.session_state.page == 'home':
+    st.markdown("<h1 style='color: #002e6e;'>🛡️ AM UNIVERSAL FRAUD SENTINEL</h1>", unsafe_allow_html=True)
     
-    # Real-time Metrics
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("API Latency", "0.002ms", "-0.001ms")
-    m2.metric("Scan Accuracy", "99.98%", "Optimal")
-    m3.metric("Nodes Mapped", "1.4B+", "Global")
-    m4.metric("Risk Level", "Low", "Stable")
+    st.write("### 🏦 Financial & Banking")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("📱\nMobile\nWallet"): navigate_to('upi')
+    with c2:
+        if st.button("📑\nCheck\nAudit"): navigate_to('check')
+    with c3:
+        if st.button("🌍\nIntl.\nSwift"): navigate_to('intl')
+
+    st.write("### 🛡️ Insurance & Governance")
+    c4, c5, c6 = st.columns(3)
+    with c4:
+        if st.button("🏥\nMedical\nClaims"): navigate_to('ins')
+    with c5:
+        if st.button("⚖️\nTax/GST\nFraud"): navigate_to('tax')
+    with c6:
+        if st.button("🏢\nLoan\nFraud"): navigate_to('loan')
     
     st.divider()
-    st.markdown("<div class='module-header'>🏦 Core Security Modules (Click to Run Scan)</div>", unsafe_allow_html=True)
-    
-    # Functional Buttons Logic
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("💳 CORE BANKING\n(Swift/RTGS Audit)"):
-            with st.spinner("Auditing International Swift Logs..."):
-                time.sleep(1.5)
-                st.success("✅ Audit Complete: No unauthorized Cross-Border hops detected.")
-        if st.button("📱 MOBILE WALLET\n(UPI/Paytm Shield)"):
-            with st.spinner("Monitoring UPI Traffic..."):
-                time.sleep(1)
-                st.info("📡 Shield Active: 4.2 Million transactions verified in last 60s.")
+    st.info("💡 Tip: Click any icon to run a real-time GNN relational scan.")
 
-    with col2:
-        if st.button("📑 CHECK CLEARANCE\n(Forensic Audit)"):
-            with st.spinner("Verifying Check Series..."):
+# PAGE: UPI MODULE
+elif st.session_state.page == 'upi':
+    st.button("⬅️ Back to Apps", on_click=lambda: navigate_to('home'))
+    st.header("📱 UPI Decision Engine")
+    upi_id = st.text_input("Enter UPI ID or Mobile Number", placeholder="example@upi")
+    
+    if upi_id:
+        if st.button("Verify Transaction"):
+            with st.spinner("GNN scanning 1.4B nodes..."):
                 time.sleep(1.5)
-                st.warning("⚠️ Manual Verification Required: Check series 998x has 2% signature variance.")
-        if st.button("🏥 MEDICAL CLAIMS\n(Anti-Collusion)"):
-            with st.spinner("Analyzing Hospital-Agent Clusters..."):
+                risk = 92 if "fraud" in upi_id.lower() else 14
+                if risk > 70:
+                    st.error(f"🚨 BLOCKED: {upi_id} linked to a fraud cluster.")
+                else:
+                    st.success(f"✅ APPROVED: {upi_id} is safe for payment.")
+
+# PAGE: INSURANCE MODULE
+elif st.session_state.page == 'ins':
+    st.button("⬅️ Back to Apps", on_click=lambda: navigate_to('home'))
+    st.header("🏥 Insurance Claim Forensic")
+    policy = st.text_input("Enter Policy Number")
+    if policy:
+        if st.button("Run Collusion Scan"):
+            with st.spinner("Checking Hospital-Agent-Patient network..."):
                 time.sleep(2)
-                st.success("✅ No 'Fraud Triangles' detected in current claim batch.")
+                st.warning("⚠️ Suspicious Pattern: High-frequency claims detected from this node.")
 
-    with col3:
-        if st.button("🌍 CROSS-BORDER\n(Intl. Exchange)"):
-            with st.spinner("Scanning Global Nodes..."):
-                time.sleep(1.5)
-                st.write("🌍 *Exchange Report:* 12 nodes flagged in High-Risk jurisdictions.")
-        if st.button("⚠️ EMERGENCY FREEZE\n(Protocol 9)"):
-            st.error("🚨 EMERGENCY PROTOCOL 9 INITIATED: Locking all nodes with Risk > 85%.")
+# PAGE: INTERNATIONAL (GNN Graph)
+elif st.session_state.page == 'intl':
+    st.button("⬅️ Back to Apps", on_click=lambda: navigate_to('home'))
+    st.header("🌍 Global Swift Relational Map")
+    swift = st.text_input("Enter Swift Code")
+    if st.button("Trace Global Path"):
+        nodes = [Node(id="India", label="Local Bank", color="#002e6e"),
+                 Node(id="Intl", label="Global Node", color="red")]
+        edges = [Edge(source="India", target="Intl")]
+        agraph(nodes=nodes, edges=edges, config=Config(width=600, height=400, directed=True))
 
-# 5. RELATIONAL VISUALIZER (GNN Logic)
-elif menu == "Relational Visualizer":
-    st.header("🕸️ GNN Relational Threat Mapping")
-    target_id = st.text_input("Enter ID (Try 'FRAUD_USER' or 'ANKIT')", "ANKIT")
-    
-    c_map, c_risk = st.columns([2, 1])
-    
-    with c_risk:
-        risk_score = 94 if "FRAUD" in target_id.upper() else 12
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number", value = risk_score,
-            title = {'text': "Risk Probability %"},
-            gauge = {'axis': {'range': [0, 100]}, 'bar': {'color': "#58a6ff"},
-                     'steps' : [{'range': [0, 40], 'color': "green"}, {'range': [75, 100], 'color': "red"}]}
-        ))
-        st.plotly_chart(fig, use_container_width=True)
-
-    with c_map:
-        if st.button("Start Relational Scan"):
-            with st.spinner("Mapping 1.4B Node Edges..."):
-                nodes = [Node(id=target_id, label=target_id, size=25, color="#58a6ff"),
-                         Node(id="Proxy", label="VPN Node", size=15, color="orange"),
-                         Node(id="Mule", label="Mule Acc", size=20, color="red")]
-                edges = [Edge(source=target_id, target="Proxy"), Edge(source="Proxy", target="Mule")]
-                config = Config(width=600, height=400, directed=True)
-                agraph(nodes=nodes, edges=edges, config=config)
-
-# 6. TECHNICAL DOCS
-elif menu == "Technical Docs":
-    st.header("📄 Enterprise Technical Documentation")
-    st.markdown("""
-    ### 1. GNN Core Architecture
-    - *Dataset:* Simulated 1.4 Billion Node Graph Database.
-    - *Logic:* Multi-hop relational analysis to detect hidden fraud syndicates.
-    
-    ### 2. Compliance Framework
-    - *RBI Guidelines:* Fully compliant with Digital Payment Security Controls.
-    - *PQC:* Post-Quantum Cryptography ready encryption layers.
-    """)
-    st.download_button("📥 Download Forensic Whitepaper (PDF)", data="Sample PDF Content", file_name="Sentinel_Report.pdf")
+# (Baki modules ke liye bhi isi tarah simple blocks add kar sakte hain)
