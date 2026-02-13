@@ -1,6 +1,10 @@
 streamlit
+pandas
+numpy
 matplotlib
 torch
 torch-geometric
 networkx
 plotly
+streamlit-agraph
+scikit-learn
