@@ -1,4 +1,4 @@
-mport streamlit as st
+import streamlit as st
 import time
 import plotly.graph_objects as go
 from streamlit_agraph import agraph, Node, Edge, Config
@@ -127,3 +127,4 @@ elif st.session_state.page == 'graph':
         nodes = [Node(id="A", label="Sender", color="#58a6ff"), Node(id="B", label="Receiver", color="red")]
         edges = [Edge(source="A", target="B")]
         agraph(nodes=nodes, edges=edges, config=Config(width=800, height=500))
+
