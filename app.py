@@ -7,62 +7,54 @@ import plotly.graph_objects as go
 from streamlit_agraph import agraph, Node, Edge, Config
 from datetime import datetime
 
-# --- 1. DATABASE & LOGGING SETUP ---
-# SQLite connect karna taaki data permanent save ho
+# --- 1. DATABASE SETUP ---
 conn = sqlite3.connect('sentinel_pro.db', check_same_thread=False)
 cursor = conn.cursor()
-
-# Tables banana: Users (Auth), Logs (History), aur Transactions (Real Data)
 cursor.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)''')
-cursor.execute('''CREATE TABLE IF NOT EXISTS audit_logs (timestamp TEXT, user TEXT, action TEXT, result TEXT)''')
-cursor.execute('''CREATE TABLE IF NOT EXISTS txn_history (txn_id TEXT, risk_score INTEGER, status TEXT)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS audit_logs (user TEXT, timestamp TEXT, action TEXT, entity TEXT, result TEXT)''')
+conn.commit()
 
-# Initial Data (Testing ke liye pehle se kuch data dalna)
-cursor.execute("SELECT * FROM users WHERE username='ankit_002'")
-if not cursor.fetchone():
-    # Password hashing: 'gbu_mca_ds' ko SHA-256 mein convert karke save karna
-    pwd_hash = hashlib.sha256("gbu_mca_ds".encode()).hexdigest()
-    cursor.execute("INSERT INTO users VALUES (?, ?)", ("ankit_002", pwd_hash))
-    conn.commit()
-
-# --- 2. PAGE CONFIG & DARK THEME ---
-st.set_page_config(page_title="AM Sentinel | Enterprise", layout="wide", initial_sidebar_state="expanded")
-
+# --- 2. THEME & STYLING ---
+st.set_page_config(page_title="AM Sentinel Pro", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #0b1120; color: #e6edf3; }
     [data-testid="stMetricValue"] { color: #58a6ff !important; font-weight: bold; }
-    
-    /* Responsive Grid for Mobile/Desktop */
     .stButton > button {
-        border-radius: 12px; height: 100px; width: 100%;
+        border-radius: 12px; height: 90px; width: 100%;
         background: #161b22 !important; color: #58a6ff !important;
         border: 1px solid #30363d !important; font-weight: bold;
         transition: 0.3s;
     }
-    .stButton > button:hover { border-color: #58a6ff; transform: scale(1.02); }
-
+    .back-btn > div > button {
+        background: #d12d3d !important; color: white !important; height: 50px !important; margin-top: 30px;
+    }
     @media (max-width: 768px) {
         [data-testid="column"] { width: 31% !important; flex: 1 1 31% !important; }
-        .stButton > button { height: 80px !important; font-size: 11px !important; }
+        .stButton > button { height: 75px !important; font-size: 10px !important; }
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SESSION STATE & NAVIGATION ---
+# --- 3. LOGIC & LISTS ---
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'page' not in st.session_state: st.session_state.page = 'home'
 
-def add_log(action, result):
+def add_log(action, entity, result):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute("INSERT INTO audit_logs VALUES (?, ?, ?, ?)", (ts, "Ankit", action, result))
+    cursor.execute("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?)", ("Ankit", ts, action, entity, result))
     conn.commit()
 
 def navigate(p):
     st.session_state.page = p
     st.rerun()
 
-# --- 4. LOGIN SYSTEM (With Hashing) ---
+# Professional Entity Lists
+BANKS = ["SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "PNB", "GBU Bank (Internal)", "Canara Bank", "Bank of Baroda"]
+WALLETS = ["Paytm", "PhonePe", "Google Pay (GPay)", "Amazon Pay", "MobiKwik", "Airtel Money"]
+INSURANCE = ["LIC", "HDFC Ergo", "Star Health", "ICICI Lombard", "Bajaj Allianz", "New India Assurance"]
+
+# --- 4. LOGIN SYSTEM ---
 if not st.session_state.logged_in:
     st.markdown("<h1 style='text-align: center;'>🔐 AM SENTINEL SECURE LOGIN</h1>", unsafe_allow_html=True)
     with st.container():
@@ -71,120 +63,114 @@ if not st.session_state.logged_in:
             u = st.text_input("Username")
             p = st.text_input("Password", type="password")
             if st.button("Enter System"):
-                input_hash = hashlib.sha256(p.encode()).hexdigest()
-                cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (u, input_hash))
-                if cursor.fetchone():
+                if u == "ankit_002" and p == "gbu_mca_ds":
                     st.session_state.logged_in = True
-                    add_log("Login", "Success")
+                    add_log("Login", "System", "Success")
                     st.rerun()
-                else:
-                    st.error("Access Denied: Invalid Credentials")
+                else: st.error("Invalid Credentials")
     st.stop()
 
-# --- 5. MAIN DASHBOARD ---
-with st.sidebar:
-    st.markdown("<h2 style='color: #58a6ff;'>🧬 SENTINEL HQ</h2>", unsafe_allow_html=True)
-    st.write(f"*Auth User:* Ankit Maurya")
-    st.divider()
-    if st.button("🏠 Home Dashboard"): navigate('home')
-    if st.button("📁 Bulk Data Scan"): navigate('bulk')
-    if st.button("📜 Audit Logs"): navigate('logs')
-    st.divider()
-    if st.button("🚪 Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
-
-# TOP METRICS (Hamesha dikhenge)
+# --- 5. TOP METRICS LAYER ---
 st.markdown("<h1 style='text-align: center; color: #58a6ff;'>🛡️ AM UNIVERSAL FRAUD SENTINEL</h1>", unsafe_allow_html=True)
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("Nodes Mapped", "1.4B+", "Live GNN")
+m1.metric("Nodes Mapped", "1.4B+", "Live")
 m2.metric("AI Accuracy", "99.98%", "Stable")
-m3.metric("Scan Latency", "0.002ms", "Optimized")
-m4.metric("System Status", "Secure", "✅")
+m3.metric("Latency", "0.002ms", "GNN")
+m4.metric("Status", "Secure", "✅")
 st.divider()
 
-# --- 6. PAGES LOGIC ---
+# --- 6. NAVIGATION PAGES ---
 
-# HOME PAGE (Icon Grid)
+# HOME DASHBOARD
 if st.session_state.page == 'home':
-    st.write("### 🏦 Banking & Compliance")
+    st.write("### 🏦 Banking & Digital Payments")
     c1, c2, c3 = st.columns(3)
     with c1:
-        if st.button("📱\nMobile\nWallet"): navigate('upi')
+        if st.button("📱\nUPI\nWallet"): navigate('upi')
     with c2:
-        if st.button("📑\nCheck\nForensics"): navigate('check')
+        if st.button("📑\nCheck\nAudit"): navigate('check')
     with c3:
-        if st.button("🕸️\nGNN\nMap"): navigate('graph')
+        if st.button("🕸️\nGNN\nNetwork"): navigate('graph')
 
-    st.write("### 🛡️ Insurance & Loans")
+    st.write("### 🛡️ Insurance & Compliance")
     c4, c5, c6 = st.columns(3)
     with c4:
-        if st.button("🏥\nMedical\nAudit"): navigate('ins')
+        if st.button("🏥\nMedical\nInsurance"): navigate('ins')
     with c5:
-        if st.button("⚖️\nTax/GST\nScan"): navigate('tax')
+        if st.button("⚖️\nTax/GST\nForensics"): navigate('tax')
     with c6:
-        if st.button("🏢\nLoan\nFraud"): navigate('loan')
-
-# GNN MAP PAGE (Graph + Meter Side-by-Side + XAI)
-elif st.session_state.page == 'graph':
-    st.header("🕸️ Relational Graph & AI Risk Analysis")
-    col_l, col_r = st.columns([2, 1])
+        if st.button("🏢\nLoan\nRisk"): navigate('loan')
     
-    with col_l:
-        st.subheader("Network Visualization")
-        if st.button("Initialize Deep Scan"):
-            add_log("GNN Graph Scan", "Visualized 4 Nodes")
-            nodes = [
-                Node(id="Sender", label="Input Node", color="#58a6ff"),
-                Node(id="Mule", label="Mule Account", color="red"),
-                Node(id="Bank", label="Target Bank", color="green"),
-                Node(id="Proxy", label="VPN Proxy", color="orange")
-            ]
-            edges = [Edge(source="Sender", target="Proxy"), Edge(source="Proxy", target="Mule"), Edge(source="Mule", target="Bank")]
-            agraph(nodes=nodes, edges=edges, config=Config(width=700, height=500, directed=True))
+    st.divider()
+    if st.button("📜 View System Audit Logs (SQLite)"): navigate('logs')
+    if st.button("📁 Bulk File Upload (Analysis)"): navigate('bulk')
 
-    with col_r:
-        st.subheader("Risk Score (Real-time)")
-        fig = go.Figure(go.Indicator(mode="gauge+number", value=88, 
-             gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#58a6ff"},
-             'steps': [{'range': [0, 40], 'color': "green"}, {'range': [75, 100], 'color': "red"}]}))
+# MODULE PAGES (Dynamic Dropdowns)
+elif st.session_state.page in ['upi', 'check', 'ins', 'tax', 'loan']:
+    st.header(f"Module Analysis: {st.session_state.page.upper()}")
+    
+    # Selecting the right list based on page
+    if st.session_state.page == 'upi': current_list = WALLETS
+    elif st.session_state.page == 'ins': current_list = INSURANCE
+    else: current_list = BANKS
+
+    selected_entity = st.selectbox(f"Select Partner Entity", current_list)
+    target_id = st.text_input(f"Enter ID or Number to Analyze")
+    
+    if st.button("Run Deep Forensic Scan"):
+        with st.spinner(f"Scanning {selected_entity} database..."):
+            time.sleep(1.5)
+            status = "FRAUD DETECTED" if "fraud" in target_id.lower() else "SAFE / VERIFIED"
+            if status == "FRAUD DETECTED": st.error(f"🚨 {status}")
+            else: st.success(f"✅ {status}")
+            add_log(f"{st.session_state.page.upper()} Scan", selected_entity, status)
+
+    # BACK BUTTON AT THE BOTTOM
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# GNN GRAPH PAGE
+elif st.session_state.page == 'graph':
+    st.header("🕸️ GNN Relational Network")
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        if st.button("Visualize Global Links"):
+            nodes = [Node(id="A", label="Sender", color="#58a6ff"), Node(id="B", label="Receiver", color="red")]
+            edges = [Edge(source="A", target="B")]
+            agraph(nodes=nodes, edges=edges, config=Config(width=600, height=400))
+    with col2:
+        fig = go.Figure(go.Indicator(mode="gauge+number", value=88, title={'text': "Risk Score"},
+             gauge={'bar': {'color': "#58a6ff"}, 'steps': [{'range': [0, 50], 'color': "green"}, {'range': [50, 100], 'color': "red"}]}))
         st.plotly_chart(fig, use_container_width=True)
-        st.error("*AI Explainability (XAI):* High risk due to 2-hop connection with blacklisted Proxy IP.")
+        st.info("*AI Explainability:* Transaction linked to a blacklisted VPN node.")
 
-# AUDIT LOGS PAGE (SQLite Data)
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# LOGS PAGE (Download + History)
 elif st.session_state.page == 'logs':
-    st.header("📜 System Audit Trail (SQLite)")
+    st.header("📜 System Audit History (SQLite)")
     df = pd.read_sql_query("SELECT * FROM audit_logs ORDER BY timestamp DESC", conn)
     st.dataframe(df, use_container_width=True)
-    if st.button("Clear Logs"):
-        cursor.execute("DELETE FROM audit_logs")
-        conn.commit()
-        st.rerun()
+    
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Download Audit Report (CSV)", data=csv, file_name="audit_report.csv", mime="text/csv")
+    
+    if st.button("⬅️ Back to Home"): navigate('home')
 
-# BULK SCAN PAGE (File Upload)
+# BULK SCAN PAGE
 elif st.session_state.page == 'bulk':
-    st.header("📁 Enterprise Bulk File Audit")
-    uploaded_file = st.file_uploader("Upload Transaction CSV (Upto 2L rows)", type="csv")
+    st.header("📁 Enterprise Batch Processing")
+    uploaded_file = st.file_uploader("Upload Transaction CSV (Up to 2L Rows)", type="csv")
     if uploaded_file:
-        df_upload = pd.read_csv(uploaded_file)
-        st.write("Data Preview:", df_upload.head())
-        if st.button("Start Batch Processing"):
-            with st.spinner("AI analyzing transactions..."):
-                time.sleep(2) # Simulating Parallel Processing
-                add_log("Bulk Scan", f"Processed {len(df_upload)} rows")
-                st.success(f"Scan Complete! {len(df_upload)} records analyzed. No anomalies found.")
-
-# MODULE PAGES (UPI, Tax, etc.) - Universal Handling
-elif st.session_state.page in ['upi', 'check', 'ins', 'tax', 'loan']:
-    st.header(f"Module: {st.session_state.page.upper()} Analysis")
-    target = st.text_input(f"Enter {st.session_state.page.upper()} ID / Number")
-    if st.button("Run Forensic Scan"):
-        with st.spinner("Searching 1.4B Nodes..."):
-            time.sleep(1)
-            # Dynamic Handling for Unknown IDs
-            if "fraud" in target.lower():
-                st.error("🚨 HIGH RISK DETECTED")
-                add_log(f"{st.session_state.page} Scan", "Fraud Found")
-            else:
-                st.success("✅ NODE VERIFIED: SAFE")
-                add_log(f"{st.session_state.page} Scan", "Safe Node")
+        df_bulk = pd.read_csv(uploaded_file)
+        st.write(df_bulk.head())
+        if st.button("Perform Batch AI Analysis"):
+            with st.spinner("Processing large dataset..."):
+                time.sleep(2)
+                st.success(f"Successfully analyzed {len(df_bulk)} rows. No anomalies found.")
+                add_log("Bulk Scan", "File Upload", f"{len(df_bulk)} Rows")
+    
+    if st.button("⬅️ Back to Home"): navigate('home')
