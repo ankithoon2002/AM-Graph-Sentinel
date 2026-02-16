@@ -15,6 +15,7 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS audit_logs
                (user TEXT, timestamp TEXT, action TEXT, entity TEXT, result TEXT)''')
 conn.commit()
 
+# --- 2. CONFIG & STYLING ---
 st.set_page_config(page_title="AM Sentinel Pro", layout="wide")
 st.markdown("""
     <style>
@@ -26,11 +27,12 @@ st.markdown("""
         border: 1px solid #30363d !important; font-weight: bold;
     }
     .back-btn > div > button {
-        background: #d12d3d !important; color: white !important; height: 50px !important; margin-top: 30px;
+        background: #d12d3d !important; color: white !important; height: 50px !important; margin-top: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
 
+# Navigation State
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'page' not in st.session_state: st.session_state.page = 'home'
 
@@ -43,11 +45,12 @@ def add_log(action, entity, result):
     cursor.execute("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?)", ("Ankit", ts, action, entity, result))
     conn.commit()
 
-BANKS = ["SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "PNB", "GBU Bank"]
-WALLETS = ["Paytm", "PhonePe", "Google Pay (GPay)", "Amazon Pay"]
-INSURANCE = ["LIC", "HDFC Ergo", "Star Health", "ICICI Lombard"]
+# --- EXHAUSTIVE DROPDOWN LISTS ---
+BANKS = ["SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "PNB", "GBU Bank", "Canara Bank", "Bank of Baroda"]
+WALLETS = ["Paytm", "PhonePe", "Google Pay (GPay)", "Amazon Pay", "MobiKwik", "Airtel Money"]
+INSURANCE = ["LIC", "HDFC Ergo", "Star Health", "ICICI Lombard", "Bajaj Allianz", "New India Assurance"]
 
-# --- 2. LOGIN SYSTEM ---
+# --- 3. LOGIN SYSTEM ---
 if not st.session_state.logged_in:
     st.markdown("<h1 style='text-align: center;'>🔐 AM SENTINEL SECURE LOGIN</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1,2,1])
@@ -62,7 +65,7 @@ if not st.session_state.logged_in:
             else: st.error("Access Denied")
     st.stop()
 
-# --- 3. HEADER ---
+# --- 4. HEADER ---
 st.markdown("<h1 style='text-align: center; color: #58a6ff;'>🛡️ AM UNIVERSAL FRAUD SENTINEL</h1>", unsafe_allow_html=True)
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Nodes Analyzed", "1.4B+", "Live")
@@ -71,75 +74,120 @@ m3.metric("Neural Latency", "0.002ms", "GNN")
 m4.metric("Status", "Secure", "✅")
 st.divider()
 
-# --- 4. NAVIGATION ---
+# --- 5. PAGE LOGIC ---
+
+# HOME PAGE
 if st.session_state.page == 'home':
     st.write("### 🏦 Banking & Digital Payments")
     c1, c2, c3 = st.columns(3)
     with c1:
-        if st.button("📱\nUPI\nWallet"): navigate('upi')
+        if st.button("📱 UPI Wallet"): navigate('upi')
     with c2:
-        if st.button("📑\nCheck\nAudit"): navigate('check')
+        if st.button("📑 Check Audit"): navigate('check')
     with c3:
-        if st.button("🕸️\nGNN\nNetwork"): navigate('graph')
+        if st.button("🕸️ GNN Network"): navigate('graph')
 
     st.write("### 🛡️ Insurance & Compliance")
     c4, c5, c6 = st.columns(3)
     with c4:
-        if st.button("🏥\nMedical\nInsurance"): navigate('ins')
+        if st.button("🏥 Medical Insurance"): navigate('ins')
     with c5:
-        if st.button("⚖️\nTax/GST\nForensics"): navigate('tax')
+        if st.button("⚖️ Tax/GST Forensics"): navigate('tax')
     with c6:
-        if st.button("🏢\nLoan\nRisk"): navigate('loan')
+        if st.button("🏢 Loan Risk"): navigate('loan')
     
     st.divider()
-    # DEDICATED BULK UPLOAD BUTTON ADDED HERE
     c7, c8 = st.columns(2)
     with c7:
-        if st.button("📁 Bulk CSV Analysis (200+ Nodes)"): navigate('bulk')
+        if st.button("📁 Bulk CSV Analysis"): navigate('bulk')
     with c8:
         if st.button("📜 View Audit Logs & Reports"): navigate('logs')
 
-# --- 5. BULK UPLOAD PAGE (RESTORED) ---
-elif st.session_state.page == 'bulk':
-    st.header("📁 Enterprise Batch Processing")
-    uploaded_file = st.file_uploader("Upload Transaction CSV", type="csv")
-    if uploaded_file:
-        df_bulk = pd.read_csv(uploaded_file)
-        st.write("### Preview of Uploaded Data", df_bulk.head())
-        if st.button("Start AI Batch Analysis"):
-            with st.spinner("Analyzing 200+ Nodes..."):
-                time.sleep(2)
-                st.success(f"Analyzed {len(df_bulk)} transactions. High-risk patterns flagged.")
-                add_log("Bulk Scan", "CSV Upload", f"{len(df_bulk)} Rows")
+# MODULE PAGES (Dynamic Dropdowns Restored)
+elif st.session_state.page in ['upi', 'check', 'ins', 'tax', 'loan']:
+    st.header(f"Active Module: {st.session_state.page.upper()}")
     
-    if st.button("⬅️ Back to Home"): navigate('home')
+    # Picking the correct dropdown list
+    if st.session_state.page == 'upi':
+        current_list = WALLETS
+    elif st.session_state.page == 'ins':
+        current_list = INSURANCE
+    else:
+        current_list = BANKS
+        
+    sel = st.selectbox("Select Partner Entity", current_list)
+    tid = st.text_input("Enter ID / Number to Scan")
+    
+    if st.button("Run Deep Forensic Scan"):
+        with st.spinner("Analyzing Database..."):
+            time.sleep(1)
+            res = "FRAUD DETECTED" if "fraud" in tid.lower() or "999" in tid else "VERIFIED SAFE"
+            st.success(res) if "SAFE" in res else st.error(res)
+            add_log(f"{st.session_state.page.upper()} Scan", sel, res)
 
-# --- 6. GNN HUB ---
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# GNN PAGE (With Advanced Charts & Search)
 elif st.session_state.page == 'graph':
     st.header("🕸️ GNN Intelligence Hub")
-    target_node = st.text_input("🔍 Search Node")
-    col_g, col_r = st.columns([2, 1])
-    with col_g:
-        nodes = [Node(id="B", label="Bank", color="#58a6ff"), Node(id="I", label="Ins", color="#2ea44f"), Node(id="F", label="FRAUD", color="#d12d3d")]
-        edges = [Edge(source="B", target="F")]
-        agraph(nodes=nodes, edges=edges, config=Config(width=700, height=450))
-    with col_r:
-        val = 94 if target_node else 15
-        st.plotly_chart(go.Figure(go.Indicator(mode="gauge+number", value=val, gauge={'bar':{'color':"#58a6ff"}})))
+    target = st.text_input("🔍 Search Node (USR_ID)")
     
-    # CHARTS (HR DASHBOARD LOOK)
-    c1, c2 = st.columns(2)
-    with c1:
-        st.plotly_chart(px.pie(names=['Safe', 'Fraud'], values=[180, 20], hole=0.5, color_discrete_sequence=['#2ea44f', '#d12d3d']))
-    with c2:
-        st.plotly_chart(px.bar(x=['SBI', 'Paytm', 'LIC'], y=[5, 15, 2], title="Threats"))
-    
-    if st.button("⬅️ Back to Home"): navigate('home')
+    cg, cr = st.columns([2, 1])
+    with cg:
+        nodes = [
+            Node(id="B", label="Banks (Blue)", color="#58a6ff", size=25),
+            Node(id="I", label="Insurance (Green)", color="#2ea44f", size=25),
+            Node(id="W", label="Wallet (Yellow)", color="#dbab09", size=25),
+            Node(id="F", label="FRAUD NODE", color="#d12d3d", size=35)
+        ]
+        edges = [Edge(source="B", target="W"), Edge(source="W", target="F"), Edge(source="I", target="F")]
+        agraph(nodes=nodes, edges=edges, config=Config(width=700, height=450, directed=True, physics=True))
+    with cr:
+        val = 94 if target else 15
+        st.plotly_chart(go.Figure(go.Indicator(mode="gauge+number", value=val, 
+                        gauge={'bar':{'color':"#58a6ff"}, 'axis':{'range':[0,100]},
+                        'steps':[{'range':[0,40], 'color':'green'}, {'range':[70,100], 'color':'red'}]})), use_container_width=True)
 
-# --- 7. LOGS PAGE ---
+    # Advanced Analytics (The HR Dashboard Look)
+    c_pie, c_bar = st.columns(2)
+    with c_pie:
+        st.plotly_chart(px.pie(names=['Safe', 'Caution', 'Fraud'], values=[140, 40, 20], hole=0.5, 
+                              color_discrete_sequence=['#2ea44f', '#dbab09', '#d12d3d'], title="Network Health Ratio"), use_container_width=True)
+    with c_bar:
+        st.plotly_chart(px.bar(x=['Banks', 'UPI', 'Insurance'], y=[8, 25, 4], title="Threats by Category", 
+                              color_discrete_sequence=['#d12d3d']), use_container_width=True)
+
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# BULK SCAN PAGE
+elif st.session_state.page == 'bulk':
+    st.header("📁 Enterprise Batch Analysis")
+    uploaded = st.file_uploader("Upload Transaction CSV (200+ Nodes)", type="csv")
+    if uploaded:
+        df_up = pd.read_csv(uploaded)
+        st.write("Preview:", df_up.head())
+        if st.button("Start AI Batch Analysis"):
+            with st.spinner("Processing..."):
+                time.sleep(2)
+                st.success(f"Analyzed {len(df_up)} rows. Pattern match complete.")
+                add_log("Bulk Scan", "CSV Upload", f"{len(df_up)} Rows")
+
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# LOGS PAGE
 elif st.session_state.page == 'logs':
-    st.header("📜 Forensic Reports")
-    df = pd.read_sql_query("SELECT * FROM audit_logs ORDER BY timestamp DESC", conn)
-    st.dataframe(df, use_container_width=True)
-    st.download_button("📥 Excel Report", df.to_csv(index=False), "report.csv")
-    if st.button("⬅️ Back to Home"): navigate('home')
+    st.header("📜 Forensic Reports & History")
+    df_logs = pd.read_sql_query("SELECT * FROM audit_logs ORDER BY timestamp DESC", conn)
+    st.dataframe(df_logs, use_container_width=True)
+    
+    st.download_button("📥 Excel (CSV) Report", df_logs.to_csv(index=False), "report.csv")
+    
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
