@@ -10,3 +10,6 @@ streamlit-agraph
 scikit-learn
 pdfplumber
 fpdf
+requests
+folium
+python-dotenv
