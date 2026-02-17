@@ -47,6 +47,7 @@ if not st.session_state.auth:
                 if cursor.fetchone() or (u=="ankit" and p=="123"):
                     st.session_state.auth = True
                     st.session_state.user = u
+                    st.session_state.page ='home'
                     st.rerun()
                 else: st.error("Access Denied")
             else:
@@ -138,3 +139,4 @@ elif st.session_state.page == 'graph':
     edges = [Edge(source="A", target="B"), Edge(source="B", target="C")]
     agraph(nodes=nodes, edges=edges, config=Config(width=800, height=500))
     if st.button("⬅️ Back"): navigate('home')
+
