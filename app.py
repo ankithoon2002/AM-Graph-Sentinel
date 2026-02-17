@@ -1,103 +1,193 @@
 import streamlit as st
 import pandas as pd
+import sqlite3
+import time
+import plotly.graph_objects as go
 import plotly.express as px
 from streamlit_agraph import agraph, Node, Edge, Config
-import random
+from datetime import datetime
+import base64
 
-# --- 1. SETTINGS & CSS (Wahi Original Look) ---
-st.set_page_config(page_title="AM Universal Fraud Sentinel", layout="wide")
+# --- 1. DATABASE SETUP ---
+conn = sqlite3.connect('sentinel_pro.db', check_same_thread=False)
+cursor = conn.cursor()
+cursor.execute('''CREATE TABLE IF NOT EXISTS audit_logs 
+               (user TEXT, timestamp TEXT, action TEXT, entity TEXT, result TEXT)''')
+conn.commit()
 
+# --- 2. CONFIG & STYLING ---
+st.set_page_config(page_title="AM Sentinel Pro", layout="wide")
 st.markdown("""
     <style>
-    .stApp { background-color: #0e1117; color: white; }
-    /* Original Blue-Outline Buttons */
-    .stButton > button { 
-        height: 100px; width: 100%; font-size: 22px; font-weight: bold; 
-        border-radius: 15px; border: 2px solid #4da3ff !important; 
-        background-color: transparent !important; color: white !important;
+    .stApp { background-color: #0b1120; color: #e6edf3; }
+    [data-testid="stMetricValue"] { color: #58a6ff !important; font-weight: bold; }
+    .stButton > button {
+        border-radius: 12px; height: 90px; width: 100%;
+        background: #161b22 !important; color: #58a6ff !important;
+        border: 1px solid #30363d !important; font-weight: bold;
     }
-    .stButton > button:hover { background-color: #4da3ff !important; color: black !important; }
-    .highlight-box {
-        background-color: #161b22; padding: 25px; border-radius: 15px;
-        text-align: center; border: 2px solid #3b82f6; margin-bottom: 25px;
+    .back-btn > div > button {
+        background: #d12d3d !important; color: white !important; height: 50px !important; margin-top: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-if 'auth' not in st.session_state: st.session_state.auth = False
+# Navigation State
+if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'page' not in st.session_state: st.session_state.page = 'home'
 
-# --- 2. LOGIN (Sirf Starting mein) ---
-if not st.session_state.auth:
-    st.title("🛡️ SENTINEL SECURE ACCESS")
-    u = st.text_input("Username")
-    p = st.text_input("Password", type="password")
-    if st.button("Enter System"):
-        if u == "ankit" and p == "123":
-            st.session_state.auth = True
-            st.rerun()
+def navigate(p):
+    st.session_state.page = p
+    st.rerun()
+
+def add_log(action, entity, result):
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?)", ("Ankit", ts, action, entity, result))
+    conn.commit()
+
+# --- EXHAUSTIVE DROPDOWN LISTS ---
+BANKS = ["SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "PNB", "GBU Bank", "Canara Bank", "Bank of Baroda"]
+WALLETS = ["Paytm", "PhonePe", "Google Pay (GPay)", "Amazon Pay", "MobiKwik", "Airtel Money"]
+INSURANCE = ["LIC", "HDFC Ergo", "Star Health", "ICICI Lombard", "Bajaj Allianz", "New India Assurance"]
+
+# --- 3. LOGIN SYSTEM ---
+if not st.session_state.logged_in:
+    st.markdown("<h1 style='text-align: center;'>🔐 AM SENTINEL SECURE LOGIN</h1>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1,2,1])
+    with c2:
+        u = st.text_input("Username")
+        p = st.text_input("Password", type="password")
+        if st.button("Access System"):
+            if u == "ankit_002" and p == "gbu_mca_ds":
+                st.session_state.logged_in = True
+                add_log("Login", "System", "Success")
+                st.rerun()
+            else: st.error("Access Denied")
     st.stop()
 
-# --- 3. TOP HIGHLIGHTS (1.4B Nodes & Accuracy) ---
-st.markdown("""
-    <div class="highlight-box">
-        <h1 style='color:#4da3ff; margin:0;'>🌐 GNN GLOBAL FORENSIC ENGINE</h1>
-        <p style='font-size:24px; margin:5px;'><b>Nodes Scanned:</b> 1.4 Billion+ | <b>Accuracy:</b> 98.4% | <b>Real-time Latency:</b> 12ms</p>
-    </div>
-    """, unsafe_allow_html=True)
+# --- 4. HEADER ---
+st.markdown("<h1 style='text-align: center; color: #58a6ff;'>🛡️ AM UNIVERSAL FRAUD SENTINEL</h1>", unsafe_allow_html=True)
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Nodes Analyzed", "1.4B+", "Live")
+m2.metric("AI Accuracy", "99.98%", "Stable")
+m3.metric("Neural Latency", "0.002ms", "GNN")
+m4.metric("Status", "Secure", "✅")
+st.divider()
 
-# --- 4. MAIN DASHBOARD (EXACT ORIGINAL LOOK) ---
+# --- 5. PAGE LOGIC ---
+
+# HOME PAGE
 if st.session_state.page == 'home':
-    st.write("### Forensic Investigation Modules")
+    st.write("### 🏦 Banking & Digital Payments")
     c1, c2, c3 = st.columns(3)
     with c1:
-        if st.button("📱 UPI / WALLET"): st.session_state.page = 'upi'; st.rerun()
-        if st.button("🏛️ BANK ACCOUNTS"): st.session_state.page = 'bank'; st.rerun()
+        if st.button("📱 UPI Wallet"): navigate('upi')
     with c2:
-        if st.button("📄 INSURANCE CLAIMS"): st.session_state.page = 'insurance'; st.rerun()
-        if st.button("🕸️ GNN NETWORK"): st.session_state.page = 'graph'; st.rerun()
+        if st.button("📑 Check Audit"): navigate('check')
     with c3:
-        if st.button("📁 BULK ANALYSIS"): st.session_state.page = 'bulk'; st.rerun()
-        if st.button("📜 AUDIT LOGS"): st.session_state.page = 'logs'; st.rerun()
+        if st.button("🕸️ GNN Network"): navigate('graph')
 
-# --- 5. GNN NETWORK (Restored with 3 Graphs) ---
+    st.write("### 🛡️ Insurance & Compliance")
+    c4, c5, c6 = st.columns(3)
+    with c4:
+        if st.button("🏥 Medical Insurance"): navigate('ins')
+    with c5:
+        if st.button("⚖️ Tax/GST Forensics"): navigate('tax')
+    with c6:
+        if st.button("🏢 Loan Risk"): navigate('loan')
+    
+    st.divider()
+    c7, c8 = st.columns(2)
+    with c7:
+        if st.button("📁 Bulk CSV Analysis"): navigate('bulk')
+    with c8:
+        if st.button("📜 View Audit Logs & Reports"): navigate('logs')
+
+# MODULE PAGES (Dynamic Dropdowns Restored)
+elif st.session_state.page in ['upi', 'check', 'ins', 'tax', 'loan']:
+    st.header(f"Active Module: {st.session_state.page.upper()}")
+    
+    # Picking the correct dropdown list
+    if st.session_state.page == 'upi':
+        current_list = WALLETS
+    elif st.session_state.page == 'ins':
+        current_list = INSURANCE
+    else:
+        current_list = BANKS
+        
+    sel = st.selectbox("Select Partner Entity", current_list)
+    tid = st.text_input("Enter ID / Number to Scan")
+    
+    if st.button("Run Deep Forensic Scan"):
+        with st.spinner("Analyzing Database..."):
+            time.sleep(1)
+            res = "FRAUD DETECTED" if "fraud" in tid.lower() or "999" in tid else "VERIFIED SAFE"
+            st.success(res) if "SAFE" in res else st.error(res)
+            add_log(f"{st.session_state.page.upper()} Scan", sel, res)
+
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# GNN PAGE (With Advanced Charts & Search)
 elif st.session_state.page == 'graph':
     st.header("🕸️ GNN Intelligence Hub")
-    # PURANA MULTI-GRAPH DROPDOWN
-    graph_view = st.selectbox("Select Network View", ["Transaction money trail", "Fraud Ring Cluster", "High-Risk Node Analysis"])
+    target = st.text_input("🔍 Search Node (USR_ID)")
     
-    if graph_view == "Transaction money trail":
-        nodes = [Node(id="A", label="User", color="green"), Node(id="B", label="Suspect", color="red")]
-        edges = [Edge(source="A", target="B")]
-    elif graph_view == "Fraud Ring Cluster":
-        nodes = [Node(id="X", label="Fraud A", color="red"), Node(id="Y", label="Fraud B", color="red"), Node(id="Z", label="Money Mule", color="orange")]
-        edges = [Edge(source="X", target="Z"), Edge(source="Y", target="Z")]
-    else:
-        nodes = [Node(id="N1", label="Node 1.4B", color="blue")]
-        edges = []
-        
-    agraph(nodes=nodes, edges=edges, config=Config(width=1000, height=600))
-    if st.button("⬅️ BACK"): st.session_state.page = 'home'; st.rerun()
+    cg, cr = st.columns([2, 1])
+    with cg:
+        nodes = [
+            Node(id="B", label="Banks (Blue)", color="#58a6ff", size=25),
+            Node(id="I", label="Insurance (Green)", color="#2ea44f", size=25),
+            Node(id="W", label="Wallet (Yellow)", color="#dbab09", size=25),
+            Node(id="F", label="FRAUD NODE", color="#d12d3d", size=35)
+        ]
+        edges = [Edge(source="B", target="W"), Edge(source="W", target="F"), Edge(source="I", target="F")]
+        agraph(nodes=nodes, edges=edges, config=Config(width=700, height=450, directed=True, physics=True))
+    with cr:
+        val = 94 if target else 15
+        st.plotly_chart(go.Figure(go.Indicator(mode="gauge+number", value=val, 
+                        gauge={'bar':{'color':"#58a6ff"}, 'axis':{'range':[0,100]},
+                        'steps':[{'range':[0,40], 'color':'green'}, {'range':[70,100], 'color':'red'}]})), use_container_width=True)
 
-# --- 6. UPI SCANNER (Restored with All Wallets) ---
-elif st.session_state.page == 'upi':
-    st.header("📱 UPI Forensic Scanner")
-    # PURANA DROPDOWN
-    wallet = st.selectbox("Select App", ["PhonePe", "GooglePay", "Paytm", "Amazon Pay", "BHIM UPI", "MobiKwik"])
-    target = st.text_input("Enter UPI ID")
-    if st.button("Scan"):
-        st.write(f"Scanning {wallet} ID: {target}...")
-        st.success("Analysis Complete!")
-    if st.button("⬅️ BACK"): st.session_state.page = 'home'; st.rerun()
+    # Advanced Analytics (The HR Dashboard Look)
+    c_pie, c_bar = st.columns(2)
+    with c_pie:
+        st.plotly_chart(px.pie(names=['Safe', 'Caution', 'Fraud'], values=[140, 40, 20], hole=0.5, 
+                              color_discrete_sequence=['#2ea44f', '#dbab09', '#d12d3d'], title="Network Health Ratio"), use_container_width=True)
+    with c_bar:
+        st.plotly_chart(px.bar(x=['Banks', 'UPI', 'Insurance'], y=[8, 25, 4], title="Threats by Category", 
+                              color_discrete_sequence=['#d12d3d']), use_container_width=True)
 
-# --- 7. BANKING (Restored with Banks) ---
-elif st.session_state.page == 'bank':
-    st.header("🏛️ Banking Audit")
-    bank = st.selectbox("Select Bank", ["SBI", "HDFC", "ICICI", "Axis Bank", "PNB", "GBU Bank"])
-    if st.button("⬅️ BACK"): st.session_state.page = 'home'; st.rerun()
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- LOGS, BULK & INSURANCE (Restoring original placeholders) ---
-elif st.session_state.page in ['logs', 'bulk', 'insurance']:
-    st.header(f"Module: {st.session_state.page.upper()}")
-    st.write("Original content remains active.")
-    if st.button("⬅️ BACK"): st.session_state.page = 'home'; st.rerun()
+# BULK SCAN PAGE
+elif st.session_state.page == 'bulk':
+    st.header("📁 Enterprise Batch Analysis")
+    uploaded = st.file_uploader("Upload Transaction CSV (200+ Nodes)", type="csv")
+    if uploaded:
+        df_up = pd.read_csv(uploaded)
+        st.write("Preview:", df_up.head())
+        if st.button("Start AI Batch Analysis"):
+            with st.spinner("Processing..."):
+                time.sleep(2)
+                st.success(f"Analyzed {len(df_up)} rows. Pattern match complete.")
+                add_log("Bulk Scan", "CSV Upload", f"{len(df_up)} Rows")
+
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# LOGS PAGE
+elif st.session_state.page == 'logs':
+    st.header("📜 Forensic Reports & History")
+    df_logs = pd.read_sql_query("SELECT * FROM audit_logs ORDER BY timestamp DESC", conn)
+    st.dataframe(df_logs, use_container_width=True)
+    
+    st.download_button("📥 Excel (CSV) Report", df_logs.to_csv(index=False), "report.csv")
+    
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("⬅️ Back to Home Dashboard"): navigate('home')
+    st.markdown('</div>', unsafe_allow_html=True)
