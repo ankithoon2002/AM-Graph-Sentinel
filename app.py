@@ -169,7 +169,7 @@ elif st.session_state.page == 'logs':
     st.header("📜 Forensic Audit Logs")
     df_logs = pd.read_sql_query("SELECT * FROM audit_logs", conn)
     st.dataframe(df_logs, use_container_width=True)
-    st.download_button("📥 Download Full Report (CSV)", df_logs.to_csv(index=False), "sentinel_report.csv"
+    st.download_button("📥 Download Full Report (CSV)", df_logs.to_csv(index=False), "sentinel_report.csv")
     if st.button("⬅️ Back"): navigate('home')
   if show_map:
     st.divider()
@@ -177,4 +177,5 @@ elif st.session_state.page == 'logs':
     map_df = pd.DataFrame({'lat': [28.6, 19.0, 13.0], 'lon': [77.2, 72.8, 80.2], 'risk': [20, 95, 40]})
     fig_map = px.scatter_mapbox(map_df, lat="lat", lon="lon", size="risk", color="risk", mapbox_style="carto-darkmatter", zoom=3)
     st.plotly_chart(fig_map, use_container_width=True)
+
 
