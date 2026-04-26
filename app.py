@@ -194,6 +194,9 @@ elif st.session_state.active_page == 'analyzer':
 
                 if probability > 0.65:
                     st.error(f"🚨 CRITICAL THREAT DETECTED: Risk Probability {risk_val:.2f}%")
+                    st.error("🔒 Account Temporarily Blocked")
+                    st.warning("🆔 KYC Verification Required")
+                    st.info("📩 Notification sent to user and admin")
                     st.warning("⚡ **AUTO-ACTION:** Node has been isolated. Outbound transactions suspended.")
                     st.warning("Alert Sent to Admin (Simulated)")
                     commit_audit_log(db_conn, cursor, st.session_state.current_user, "DETECTION", node_id, "FRAUD_DETECTED", f"{risk_val:.1f}%", "ISOLATION_TRIGGERED")
