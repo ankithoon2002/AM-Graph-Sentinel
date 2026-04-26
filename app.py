@@ -1,230 +1,267 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
 import time
 import plotly.graph_objects as go
 import plotly.express as px
-from streamlit_agraph import agraph, Node, Edge, Config
 from datetime import datetime
 import random
 
-# --- 1. DATABASE SETUP ---
-conn = sqlite3.connect('sentinel_pro.db', check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)')
-cursor.execute('''CREATE TABLE IF NOT EXISTS audit_logs 
-               (user TEXT, timestamp TEXT, action TEXT, entity TEXT, result TEXT, auto_action TEXT)''')
-conn.commit()
+# Import modular components
+from database import db_conn, cursor, commit_audit_log
+from ml_model import sentinel_model
+from auth import authenticate_user, register_user
 
-# --- 2. CONFIG & STYLING (Classic Look) ---
-st.set_page_config(page_title="AM Sentinel Pro", layout="wide")
+# --- 3. ADVANCED INTERFACE STYLING ---
+st.set_page_config(page_title="Universal Fraud Sentinel Pro", layout="wide", initial_sidebar_state="expanded")
+
 st.markdown("""
     <style>
-    .stApp { background-color: #0b1120; color: #e6edf3; }
-    [data-testid="stMetricValue"] { color: #58a6ff !important; font-weight: bold; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap');
+    
+    html, body, [class*="css"], .stApp {
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    .stApp { background: radial-gradient(circle, #0d1117 0%, #010409 100%); color: #c9d1d9; }
+    .main-header { 
+        font-size: 52px; 
+        font-weight: 900; 
+        color: #58a6ff; 
+        text-align: center; 
+        margin-bottom: 25px; 
+        font-family: 'Inter', sans-serif;
+        letter-spacing: -2px;
+        text-transform: uppercase;
+        text-shadow: 0 0 20px rgba(88,166,255,0.3);
+    }
+    [data-testid="stMetricLabel"] {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        font-size: 0.9rem !important;
+        color: #8b949e !important;
+    }
+    [data-testid="stMetricValue"] { 
+        color: #58a6ff !important; 
+        font-family: 'Inter', sans-serif !important; 
+        font-weight: 800 !important;
+    }
     .stButton > button {
-        border-radius: 12px; height: 90px; width: 100%;
-        background: #161b22 !important; color: #58a6ff !important;
-        border: 1px solid #30363d !important; font-weight: bold;
+        border-radius: 8px; height: 65px; width: 100%;
+        background: linear-gradient(145deg, #1f2937, #111827) !important;
+        color: #58a6ff !important; border: 1px solid #30363d !important;
+        font-size: 18px; transition: all 0.4s ease;
     }
-    .back-btn > div > button {
-        background: #d12d3d !important; color: white !important; height: 50px !important; margin-top: 10px;
-    }
-    .stDownloadButton > button {
-        background: #2ea44f !important; color: white !important; width: 100%; height: 50px;
-    }
+    .stButton > button:hover { border-color: #58a6ff !important; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(88,166,255,0.2); }
+    .logout-btn > div > button { background: #f85149 !important; color: white !important; height: 40px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# Navigation State
-if 'logged_in' not in st.session_state: st.session_state.logged_in = False
-if 'user' not in st.session_state: st.session_state.user = ""
-if 'page' not in st.session_state: st.session_state.page = 'home'
+# --- 4. SESSION MANAGEMENT ---
+if 'is_authenticated' not in st.session_state: st.session_state.is_authenticated = False
+if 'current_user' not in st.session_state: st.session_state.current_user = ""
+if 'active_page' not in st.session_state: st.session_state.active_page = 'dashboard'
 
-def navigate(p):
-    st.session_state.page = p
+
+def switch_view(target_page):
+    st.session_state.active_page = target_page
     st.rerun()
 
-def add_log(action, entity, result, auto_act="N/A"):
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    user_name = st.session_state.user if st.session_state.user else "Ankit"
-    cursor.execute("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?)", (user_name, ts, action, entity, result, auto_act))
-    conn.commit()
 
-# DROPDOWN LISTS
-BANKS = ["SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "PNB", "GBU Bank", "Canara Bank", "Bank of Baroda"]
-WALLETS = ["Paytm", "PhonePe", "Google Pay (GPay)", "Amazon Pay", "MobiKwik", "Airtel Money"]
-INSURANCE = ["LIC", "HDFC Ergo", "Star Health", "ICICI Lombard", "Bajaj Allianz", "New India Assurance"]
+# --- 5. AUTHENTICATION GATEWAY ---
+if not st.session_state.is_authenticated:
+    st.markdown("<div class='main-header'>🛡️ AM UNIVERSAL FRAUD SENTINEL</div>", unsafe_allow_html=True)
+    st.write("<p style='text-align: center;'>Advanced Neural Analysis & Forensic Gateway</p>", unsafe_allow_html=True)
 
-# --- 3. LOGIN & SIGNUP SYSTEM ---
-if not st.session_state.logged_in:
-    st.markdown("<h1 style='text-align: center; color: #58a6ff;'>🛡️ AM SENTINEL ACCESS CONTROL</h1>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns([1,1.5,1])
-    with c2:
-        tab1, tab2 = st.tabs(["🔑 Login", "📝 Create Account"])
-        with tab1:
-            u = st.text_input("Username", key="l_user")
-            p = st.text_input("Password", type="password", key="l_pass")
-            if st.button("Access Dashboard"):
-                cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (u, p))
-                if cursor.fetchone() or (u == "ankit_002" and p == "gbu_mca_ds"):
-                    st.session_state.logged_in = True
-                    st.session_state.user = u
-                    add_log("Login", "System", "Success")
+    col_a, col_b, col_c = st.columns([1, 1.2, 1])
+    with col_b:
+        auth_tab1, auth_tab2 = st.tabs(["🔑 Investigator Login", "📝 Node Registration"])
+        with auth_tab1:
+            u_input = st.text_input("Investigator Username")
+            p_input = st.text_input("Security Key", type="password")
+            if st.button("Authorize Access"):
+                if authenticate_user(cursor, u_input, p_input):
+                    st.session_state.is_authenticated = True
+                    st.session_state.current_user = u_input
+                    commit_audit_log(db_conn, cursor, st.session_state.current_user, "AUTH", "SYSTEM", "SUCCESS", "0.0%")
                     st.rerun()
-                else: st.error("Invalid Username or Password")
-        with tab2:
-            new_u = st.text_input("New Username", key="s_user")
-            new_p = st.text_input("New Password", type="password", key="s_pass")
-            if st.button("Register Account"):
-                try:
-                    cursor.execute("INSERT INTO users VALUES (?, ?)", (new_u, new_p))
-                    conn.commit()
-                    st.success("Account Created Successfully! Please Login.")
-                except: st.error("Username already exists!")
+                else:
+                    st.error("Authentication Failed: Invalid Credentials")
+        with auth_tab2:
+            new_u = st.text_input("New Investigator ID")
+            new_p = st.text_input("New Security Key", type="password")
+            if st.button("Register New Node"):
+                success, message = register_user(db_conn, cursor, new_u, new_p)
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
     st.stop()
 
-# --- 4. SIDEBAR ---
+# --- 6. SIDEBAR CONTROLS ---
 with st.sidebar:
-    st.title("⚙️ System Control")
-    st.write(f"Active User: *{st.session_state.user}*")
+    st.image("https://cdn-icons-png.flaticon.com/512/2092/2092663.png", width=80)
+    st.title("System Navigator")
+    st.write(f"🟢 **Session Active:** {st.session_state.current_user}")
     st.divider()
-    show_map = st.checkbox("Show Global Risk Heatmap", value=False)
-    show_feed = st.checkbox("Enable Live Threat Feed", value=False)
+    ui_map = st.toggle("Enable Risk Heatmap", value=True)
+    ui_feed = st.toggle("Live Intelligence Feed", value=True)
     st.divider()
-    if st.button("🚪 Logout"):
-        st.session_state.logged_in = False
+    st.markdown("<div class='logout-btn'>", unsafe_allow_html=True)
+    if st.button("🚪 Terminate Session"):
+        st.session_state.is_authenticated = False
         st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# --- 5. HEADER (Metrics) ---
-st.markdown("<h1 style='text-align: center; color: #58a6ff;'>🛡️ AM UNIVERSAL FRAUD SENTINEL</h1>", unsafe_allow_html=True)
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Nodes Analyzed", "1.4B+", "Live")
-m2.metric("AI Accuracy", "99.98%", "Stable")
-m3.metric("Neural Latency", "0.002ms", "GNN")
-m4.metric("Status", "Secure", "✅")
+# --- 7. MAIN INTERFACE LOGIC ---
+st.markdown("<div class='main-header'>🛡️ AM UNIVERSAL FRAUD SENTINEL</div>", unsafe_allow_html=True)
 
-if show_feed:
-    st.info(f"📡 SCANNING: {random.choice(['Node-X22', 'SBI Gateway', 'Paytm-API-V2'])}")
+# Global Statistics
+s1, s2, s3, s4 = st.columns(4)
+s1.metric("Global Nodes", "1.42 Billion", "+1.2M")
+s2.metric("Neural Accuracy", "99.982%", "Stable")
+s3.metric("GNN Latency", "0.0018ms", "Optimal")
+s4.metric("Active Threats", "24", "-5", delta_color="inverse")
+
+if ui_feed:
+    st.info(
+        f"📡 **Latest Trace:** {random.choice(['High-Value Wire detected in Node-7', 'New pattern matched in UPI-V4', 'Foreign IP attempt blocked'])}")
 st.divider()
 
-# --- 6. PAGE LOGIC ---
+# --- PAGE: DASHBOARD ---
+if st.session_state.active_page == 'dashboard':
+    st.write("### 🗄️ Forensic Intelligence Modules")
+    d1, d2, d3 = st.columns(3)
+    with d1:
+        if st.button("📱 UPI / Wallet Analyzer"): switch_view('analyzer')
+    with d2:
+        if st.button("🕸️ Neural Network Hub"): switch_view('network')
+    with d3:
+        if st.button("📜 Forensic Audit Logs"): switch_view('logs')
 
-# --- HOME PAGE ---
-if st.session_state.page == 'home':
-    st.write("### 🏦 Banking & Digital Payments")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button("📱 UPI Wallet"): navigate('upi')
-    with c2:
-        if st.button("📑 Check Audit"): navigate('check')
-    with c3:
-        if st.button("🕸️ GNN Network"): navigate('graph')
+    st.write("### 🏥 Compliance & Risk Management")
+    d4, d5, d6 = st.columns(3)
+    with d4:
+        if st.button("🏥 Insurance Verifier"): switch_view('analyzer')
+    with d5:
+        if st.button("⚖️ Tax & GST Forensic"): switch_view('analyzer')
+    with d6:
+        if st.button("📁 Enterprise Bulk Scan"): switch_view('analyzer')
 
-    st.write("### 🛡️ Insurance & Compliance")
-    c4, c5, c6 = st.columns(3)
-    with c4:
-        if st.button("🏥 Medical Insurance"): navigate('ins')
-    with c5:
-        if st.button("⚖️ Tax/GST Forensics"): navigate('tax')
-    with c6:
-        if st.button("🏢 Loan Risk"): navigate('loan')
-
-    if show_map:
+    if ui_map:
         st.divider()
-        st.write("### 🌍 Global Risk Heatmap")
-        map_df = pd.DataFrame({'lat': [28.6, 19.0, 13.0, 22.5], 'lon': [77.2, 72.8, 80.2, 88.3], 'risk': [15, 98, 45, 85]})
-        fig_map = px.scatter_mapbox(map_df, lat="lat", lon="lon", size="risk", color="risk", color_continuous_scale="Reds", mapbox_style="carto-darkmatter", zoom=3)
+        st.write("### 🌍 Global Threat Distribution Map")
+        map_df = pd.DataFrame({'lat': [28.6, 19.1, 13.0, 22.5, 34.0, 40.7],
+                               'lon': [77.2, 72.8, 80.2, 88.3, -118.2, -74.0],
+                               'risk': [15, 95, 45, 80, 60, 30]})
+        fig_map = px.scatter_geo(map_df, lat="lat", lon="lon", size="risk", color="risk",
+                                 color_continuous_scale="Reds", projection="orthographic")
+        fig_map.update_layout(template="plotly_dark", margin=dict(l=0, r=0, t=0, b=0))
         st.plotly_chart(fig_map, use_container_width=True)
 
-    st.divider()
-    c7, c8 = st.columns(2)
-    with c7:
-        if st.button("📁 Bulk Analysis"): navigate('bulk')
-    with c8:
-        if st.button("📜 Audit Logs"): navigate('logs')
+# --- PAGE: ANALYZER (DETECTION ENGINE) ---
+elif st.session_state.active_page == 'analyzer':
+    st.header("🔍 Neural Detection Engine")
 
-# --- GNN INTELLIGENCE HUB (4 Graphs Restored) ---
-elif st.session_state.page == 'graph':
-    st.header("🕸️ GNN Intelligence Hub")
-    target = st.text_input("🔍 Search Node (USR_ID)")
-    
-    cg, cr = st.columns([2, 1])
-    with cg:
-        nodes = [
-            Node(id="B", label="Banks", color="#58a6ff", size=25),
-            Node(id="I", label="Insurance", color="#2ea44f", size=25),
-            Node(id="W", label="Wallet", color="#dbab09", size=25),
-            Node(id="F", label="FRAUD NODE", color="#d12d3d", size=35)
-        ]
-        edges = [Edge(source="B", target="W"), Edge(source="W", target="F"), Edge(source="I", target="F")]
-        agraph(nodes=nodes, edges=edges, config=Config(width=700, height=450, directed=True, physics=True))
-    
-    with cr:
-        val = 94 if target else 15
-        st.plotly_chart(go.Figure(go.Indicator(mode="gauge+number", value=val, title={'text': "Risk Score"},
-                        gauge={'bar':{'color':"#58a6ff"}, 'axis':{'range':[0,100]},
-                        'steps':[{'range':[0,40], 'color':'green'}, {'range':[70,100], 'color':'red'}]})), use_container_width=True)
+    col_x, col_y = st.columns(2)
+    with col_x:
+        tx_amt = st.number_input("Transaction Value ($)", min_value=1, value=5000, step=100)
+        tx_hour = st.slider("Time of Transaction (24h Format)", 0, 23, 14)
+    with col_y:
+        loc_risk = st.slider("Geographic Risk Score", 0.0, 1.0, 0.15)
+        auth_score = st.slider("Device Authentication Score", 0.0, 1.0, 0.9)
 
-    c_pie, c_bar = st.columns(2)
-    with c_pie:
-        st.plotly_chart(px.pie(names=['Safe', 'Caution', 'Fraud'], values=[140, 40, 20], hole=0.5, 
-                                color_discrete_sequence=['#2ea44f', '#dbab09', '#d12d3d'], title="Network Health Ratio"), use_container_width=True)
-    with c_bar:
-        st.plotly_chart(px.bar(x=['Banks', 'UPI', 'Insurance'], y=[8, 25, 4], title="Threats by Category", 
-                                color_discrete_sequence=['#d12d3d']), use_container_width=True)
+    node_id = st.text_input("Enter Target Node ID (Account/UPI/GSTIN)")
 
-    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
-    if st.button("⬅️ Back to Home"): navigate('home')
-    st.markdown('</div>', unsafe_allow_html=True)
+    if st.button("🚀 Execute Forensic Scan"):
+        if not node_id:
+            st.warning("Identification Node ID is required for scanning.")
+        else:
+            with st.spinner("Synchronizing with Neural Database..."):
+                time.sleep(1.5)
+                # ML PREDICTION LOGIC
+                # [Amt, Hour, Loc_Risk, Auth_Score, Freq]
+                freq_sim = random.randint(1, 15)
+                features = [[tx_amt, tx_hour, loc_risk, auth_score, freq_sim]]
+                probability = sentinel_model.predict_proba(features)[0][1]
+                risk_val = probability * 100
 
-# --- BULK ANALYSIS ---
-elif st.session_state.page == 'bulk':
-    st.header("📁 Enterprise Batch Analysis")
-    uploaded = st.file_uploader("Upload Transaction CSV (200+ Nodes)", type="csv")
-    if uploaded:
-        df_up = pd.read_csv(uploaded)
-        st.write("Preview:", df_up.head())
-        if st.button("Start AI Batch Analysis"):
-            with st.spinner("Processing..."):
-                time.sleep(2)
-                st.success(f"Analyzed {len(df_up)} rows. Pattern match complete.")
-                add_log("Bulk Scan", "CSV Upload", f"{len(df_up)} Rows")
+                if probability > 0.65:
+                    st.error(f"🚨 CRITICAL THREAT DETECTED: Risk Probability {risk_val:.2f}%")
+                    st.warning("⚡ **AUTO-ACTION:** Node has been isolated. Outbound transactions suspended.")
+                    st.warning("Alert Sent to Admin (Simulated)")
+                    commit_audit_log(db_conn, cursor, st.session_state.current_user, "DETECTION", node_id, "FRAUD_DETECTED", f"{risk_val:.1f}%", "ISOLATION_TRIGGERED")
+                    st.snow()
+                else:
+                    st.success(f"✅ NODE VERIFIED SAFE: Risk Probability {risk_val:.2f}%")
+                    commit_audit_log(db_conn, cursor, st.session_state.current_user, "DETECTION", node_id, "VERIFIED_SAFE", f"{risk_val:.1f}%", "NONE")
+                    st.balloons()
 
-    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
-    if st.button("⬅️ Back to Home"): navigate('home')
-    st.markdown('</div>', unsafe_allow_html=True)
+                # --- RISK BREAKDOWN SECTION ---
+                st.write("---")
+                st.subheader("📊 Forensic Risk Breakdown")
+                rb1, rb2, rb3, rb4 = st.columns(4)
+                rb1.metric("Transaction Value", f"${tx_amt:,.2f}")
+                rb2.metric("Location Risk", f"{loc_risk:.2f}")
+                rb3.metric("Device Auth Score", f"{auth_score:.2f}")
+                rb4.metric("Frequency", f"{freq_sim}x")
 
-# --- LOGS PAGE (Download Button Included) ---
-elif st.session_state.page == 'logs':
-    st.header("📜 Forensic Reports & History")
-    df_logs = pd.read_sql_query("SELECT * FROM audit_logs ORDER BY timestamp DESC", conn)
-    st.dataframe(df_logs, use_container_width=True)
-    
-    st.download_button("📥 Download Full Report (CSV)", df_logs.to_csv(index=False), "sentinel_report.csv")
-    
-    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
-    if st.button("⬅️ Back to Home"): navigate('home')
-    st.markdown('</div>', unsafe_allow_html=True)
+    if st.button("⬅️ Return to Dashboard"): switch_view('dashboard')
 
-# --- OTHER MODULES (UPI, Bank, etc.) ---
-elif st.session_state.page in ['upi', 'check', 'ins', 'tax', 'loan']:
-    st.header(f"Active Module: {st.session_state.page.upper()}")
-    current_list = WALLETS if st.session_state.page == 'upi' else (INSURANCE if st.session_state.page == 'ins' else BANKS)
-    sel = st.selectbox("Select Partner Entity", current_list)
-    tid = st.text_input("Enter ID / Number to Scan")
-    
-    if st.button("Run Deep Forensic Scan"):
-        with st.spinner("Analyzing Database..."):
-            time.sleep(1)
-            is_fraud = "fraud" in tid.lower() or "999" in tid
-            res = "FRAUD DETECTED" if is_fraud else "VERIFIED SAFE"
-            auto_act = "Account Frozen & GNN Flagged" if is_fraud else "N/A"
-            
-            st.success(res) if not is_fraud else st.error(res)
-            if is_fraud: st.warning(f"⚡ *Auto-Action:* {auto_act}")
-            add_log(f"{st.session_state.page.upper()} Scan", sel, res, auto_act)
+# --- PAGE: LOGS ---
+elif st.session_state.active_page == 'logs':
+    st.header("📜 Universal Audit Repository")
+    st.write("Official forensic logs for compliance and investigation.")
 
-    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
-    if st.button("⬅️ Back to Home"): navigate('home')
-    st.markdown('</div>', unsafe_allow_html=True)
+    # --- FILTER SECTION ---
+    filter_user = st.text_input("🔍 Filter by User (Operator ID)")
+
+    query = "SELECT * FROM universal_audit_logs"
+    params = []
+    if filter_user:
+        query += " WHERE user LIKE ?"
+        params.append(f"%{filter_user}%")
+    query += " ORDER BY timestamp DESC"
+
+    audit_data = pd.read_sql_query(query, db_conn, params=params)
+
+    # --- NEW: FRAUD VS SAFE BAR CHART ---
+    st.write("### 📊 Detection Distribution Analysis")
+    # Filter for detection results
+    summary_df = audit_data[audit_data['result'].isin(['FRAUD_DETECTED', 'VERIFIED_SAFE'])]
+    if not summary_df.empty:
+        chart_data = summary_df['result'].value_counts()
+        st.bar_chart(chart_data)
+    else:
+        st.info("💡 No forensic detection data available for visualization yet.")
+
+    st.dataframe(audit_data, use_container_width=True)
+
+    csv_file = audit_data.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Export Forensic Report (CSV)", data=csv_file, file_name="forensic_audit_report.csv",
+                       mime="text/csv")
+
+    if st.button("⬅️ Return to Dashboard"): switch_view('dashboard')
+
+# --- PAGE: NETWORK (GNN SIMULATION) ---
+elif st.session_state.active_page == 'network':
+    st.header("🕸️ Graph Neural Intelligence Hub")
+    st.write("Visualization of inter-connected node behaviors and fraud propagation.")
+
+    # Simulating GNN Topology with Plotly
+    labels = ['Bank Nodes', 'Wallet Nodes', 'Insurance Nodes', 'Suspicious Links']
+    values = [450, 250, 150, 45]
+
+    c_p1, c_p2 = st.columns(2)
+    with c_p1:
+        st.plotly_chart(px.pie(names=labels, values=values, hole=0.5, title="Topology Distribution",
+                               color_discrete_sequence=px.colors.sequential.RdBu), use_container_width=True)
+    with c_p2:
+        st.plotly_chart(px.bar(x=labels, y=values, title="Threat Clusters by Category",
+                               color=labels, color_discrete_sequence=px.colors.qualitative.Set1),
+                        use_container_width=True)
+
+    st.info(
+        "💡 **GNN Insight:** Most fraud propagation is occurring between Wallet Nodes and Bank Nodes via high-frequency micro-transactions.")
+
+    if st.button("⬅️ Return to Dashboard"): switch_view('dashboard')

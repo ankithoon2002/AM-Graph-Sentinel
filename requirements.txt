@@ -13,3 +13,5 @@ fpdf
 requests
 folium
 python-dotenv
+fastapi
+uvicorn
