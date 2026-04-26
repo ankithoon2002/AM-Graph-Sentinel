@@ -258,11 +258,26 @@ elif st.session_state.active_page == 'logs':
     st.write("### 📊 Detection Distribution Analysis")
     # Filter for detection results
     summary_df = audit_data[audit_data['result'].isin(['FRAUD_DETECTED', 'VERIFIED_SAFE'])]
-    if not summary_df.empty:
-        chart_data = summary_df['result'].value_counts()
-        st.bar_chart(chart_data)
-    else:
-        st.info("💡 No forensic detection data available for visualization yet.")
+    
+    col_chart1, col_chart2 = st.columns(2)
+    
+    with col_chart1:
+        if not summary_df.empty:
+            chart_data = summary_df['result'].value_counts()
+            st.bar_chart(chart_data)
+        else:
+            st.info("💡 No forensic detection data available for visualization yet.")
+            
+    with col_chart2:
+        st.write("#### 📈 Forensic Activity Trend")
+        if not audit_data.empty:
+            trend_df = audit_data.copy()
+            trend_df['timestamp'] = pd.to_datetime(trend_df['timestamp'])
+            trend_df['date'] = trend_df['timestamp'].dt.date
+            trend_data = trend_df.groupby('date').size()
+            st.line_chart(trend_data)
+        else:
+            st.info("💡 No trend data available.")
 
     st.dataframe(audit_data, use_container_width=True)
     
