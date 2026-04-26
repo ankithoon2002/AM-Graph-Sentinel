@@ -130,6 +130,13 @@ st.divider()
 
 # --- PAGE: DASHBOARD ---
 if st.session_state.active_page == 'dashboard':
+    st.write("### 🏥 System Health Overview")
+    h1, h2, h3 = st.columns(3)
+    h1.metric("Fraud Today", f"{random.randint(5, 50)} Cases", f"-{random.randint(1, 10)}%")
+    h2.metric("Transactions Scanned", f"{random.randint(10000, 50000):,}", f"+{random.randint(100, 500)}")
+    h3.metric("Blocked Nodes", f"{random.randint(100, 500)} Nodes", f"+{random.randint(5, 20)}")
+    st.divider()
+
     st.write("### 🗄️ Forensic Intelligence Modules")
     d1, d2, d3 = st.columns(3)
     with d1:
