@@ -265,6 +265,19 @@ elif st.session_state.active_page == 'logs':
         st.info("💡 No forensic detection data available for visualization yet.")
 
     st.dataframe(audit_data, use_container_width=True)
+    
+    # --- NEW: TOP RISK TRANSACTIONS ---
+    st.write("### 🚩 Top Risk Transactions")
+    # Filter for logs with a risk score and convert to numeric
+    risk_df = audit_data.copy()
+    # Handle percentages and convert to float
+    risk_df['risk_numeric'] = risk_df['risk_score'].str.replace('%', '', regex=False).astype(float)
+    top_5_risk = risk_df.sort_values(by='risk_numeric', ascending=False).head(5)
+    
+    if not top_5_risk.empty:
+        st.dataframe(top_5_risk[['timestamp', 'entity', 'result', 'risk_score', 'action_taken']], use_container_width=True)
+    else:
+        st.info("💡 No high-risk data available yet.")
 
     csv_file = audit_data.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Export Forensic Report (CSV)", data=csv_file, file_name="forensic_audit_report.csv",
