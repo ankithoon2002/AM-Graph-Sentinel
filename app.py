@@ -206,6 +206,19 @@ elif st.session_state.active_page == 'analyzer':
                     commit_audit_log(db_conn, cursor, st.session_state.current_user, "DETECTION", node_id, "VERIFIED_SAFE", f"{risk_val:.1f}%", "NONE")
                     st.balloons()
 
+                # --- NEW: AI INSIGHT SECTION ---
+                insights = []
+                if tx_amt > 10000: insights.append("high-value transaction")
+                if loc_risk > 0.5: insights.append("high-risk location")
+                if auth_score < 0.4: insights.append("low device trust")
+                if freq_sim > 10: insights.append("unusual frequency")
+
+                if insights:
+                    insight_msg = f"🤖 **AI Insight:** {', '.join(insights).capitalize()} detected."
+                    st.info(insight_msg)
+                else:
+                    st.info("🤖 **AI Insight:** Transaction patterns appear consistent with standard behavior.")
+
                 # --- RISK BREAKDOWN SECTION ---
                 st.write("---")
                 st.subheader("📊 Forensic Risk Breakdown")
