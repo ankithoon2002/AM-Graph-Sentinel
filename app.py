@@ -62,6 +62,15 @@ if 'is_authenticated' not in st.session_state: st.session_state.is_authenticated
 if 'current_user' not in st.session_state: st.session_state.current_user = ""
 if 'active_page' not in st.session_state: st.session_state.active_page = 'dashboard'
 
+# --- 4.1 MOCK USER DATABASE ---
+MOCK_PROFILES = {
+    "NODE-7": {"name": "Alex Rivest", "bank": "Global Trust Bank", "upi": "alex@gtb", "location": "New York, USA"},
+    "UPI-V4": {"name": "Sam Thorne", "bank": "Digital Wallet Inc", "upi": "sam@dw", "location": "London, UK"},
+    "GSTIN-88": {"name": "Metro Logistics", "bank": "Union Commerce", "upi": "admin@metro", "location": "Mumbai, India"},
+    "NODE-X": {"name": "Jordan Lee", "bank": "Sky Finance", "upi": "jlee@sky", "location": "Singapore"},
+    "TXN-404": {"name": "Casey Wright", "bank": "Global Trust Bank", "upi": "casey@gtb", "location": "Berlin, Germany"}
+}
+
 
 def switch_view(target_page):
     st.session_state.active_page = target_page
@@ -180,6 +189,23 @@ elif st.session_state.active_page == 'analyzer':
         auth_score = st.slider("Device Authentication Score", 0.0, 1.0, 0.9)
 
     node_id = st.text_input("Enter Target Node ID (Account/UPI/GSTIN)")
+
+    if node_id:
+        if node_id in MOCK_PROFILES:
+            profile = MOCK_PROFILES[node_id]
+            st.markdown(f"""
+            <div style="background: rgba(88,166,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #58a6ff; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #58a6ff;">👤 Account Holder Profile</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><b>Name:</b> {profile['name']}</div>
+                    <div><b>Bank:</b> {profile['bank']}</div>
+                    <div><b>UPI ID:</b> {profile['upi']}</div>
+                    <div><b>Location:</b> {profile['location']}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.warning("⚠️ **Entity Not Found:** The provided Node ID is not registered in the Sentinel Global Database.")
 
     if st.button("🚀 Execute Forensic Scan"):
         if not node_id:
