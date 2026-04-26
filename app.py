@@ -101,7 +101,8 @@ if not st.session_state.is_authenticated:
 # --- 6. SIDEBAR CONTROLS ---
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2092/2092663.png", width=80)
-    st.title("System Navigator")
+    st.title("Fraud Sentinel Pro")
+    st.caption("AI Powered Risk Intelligence System")
     st.write(f"🟢 **Session Active:** {st.session_state.current_user}")
     st.divider()
     ui_map = st.toggle("Enable Risk Heatmap", value=True)
