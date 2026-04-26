@@ -229,6 +229,20 @@ elif st.session_state.active_page == 'analyzer':
 
                 # --- RISK BREAKDOWN SECTION ---
                 st.write("---")
+                st.subheader("📝 Investigation Summary")
+                
+                status_label = "🚨 FRAUD" if probability > 0.65 else "✅ SAFE"
+                action_label = "ISOLATION_TRIGGERED" if probability > 0.65 else "NONE"
+                
+                summary_md = f"""
+                **Node ID:** `{node_id}`  
+                **Risk Score:** `{risk_val:.2f}%`  
+                **Status:** {status_label}  
+                **Action Taken:** `{action_label}`
+                """
+                st.markdown(summary_md)
+
+                st.write("---")
                 st.subheader("📊 Forensic Risk Breakdown")
                 rb1, rb2, rb3, rb4 = st.columns(4)
                 rb1.metric("Transaction Value", f"${tx_amt:,.2f}")
