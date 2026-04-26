@@ -63,12 +63,13 @@ if 'current_user' not in st.session_state: st.session_state.current_user = ""
 if 'active_page' not in st.session_state: st.session_state.active_page = 'dashboard'
 
 # --- 4.1 MOCK USER DATABASE ---
-MOCK_PROFILES = {
+user_profiles = {
     "NODE-7": {"name": "Alex Rivest", "bank": "Global Trust Bank", "upi": "alex@gtb", "location": "New York, USA"},
     "UPI-V4": {"name": "Sam Thorne", "bank": "Digital Wallet Inc", "upi": "sam@dw", "location": "London, UK"},
     "GSTIN-88": {"name": "Metro Logistics", "bank": "Union Commerce", "upi": "admin@metro", "location": "Mumbai, India"},
     "NODE-X": {"name": "Jordan Lee", "bank": "Sky Finance", "upi": "jlee@sky", "location": "Singapore"},
-    "TXN-404": {"name": "Casey Wright", "bank": "Global Trust Bank", "upi": "casey@gtb", "location": "Berlin, Germany"}
+    "TXN-404": {"name": "Casey Wright", "bank": "Global Trust Bank", "upi": "casey@gtb", "location": "Berlin, Germany"},
+    101: {"name": "Jane Doe", "bank": "Apex Bank", "upi": "jane@apex", "location": "Sydney, Australia"}
 }
 
 
@@ -191,19 +192,22 @@ elif st.session_state.active_page == 'analyzer':
     node_id = st.text_input("Enter Target Node ID (Account/UPI/GSTIN)")
 
     if node_id:
-        if node_id in MOCK_PROFILES:
-            profile = MOCK_PROFILES[node_id]
-            st.markdown(f"""
-            <div style="background: rgba(88,166,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #58a6ff; margin-bottom: 20px;">
-                <h4 style="margin-top: 0; color: #58a6ff;">👤 Account Holder Profile</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div><b>Name:</b> {profile['name']}</div>
-                    <div><b>Bank:</b> {profile['bank']}</div>
-                    <div><b>UPI ID:</b> {profile['upi']}</div>
-                    <div><b>Location:</b> {profile['location']}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        # Check both string and numeric types
+        lookup_id = node_id
+        if node_id.isdigit():
+            lookup_id = int(node_id)
+            
+        if lookup_id in user_profiles:
+            profile = user_profiles[lookup_id]
+            st.write("#### 👤 Account Holder Profile")
+            prof_col1, prof_col2 = st.columns(2)
+            with prof_col1:
+                st.write(f"**Name:** {profile['name']}")
+                st.write(f"**Bank:** {profile['bank']}")
+            with prof_col2:
+                st.write(f"**UPI ID:** {profile['upi']}")
+                st.write(f"**Location:** {profile['location']}")
+            st.write("---")
         else:
             st.warning("⚠️ **Entity Not Found:** The provided Node ID is not registered in the Sentinel Global Database.")
 
@@ -225,6 +229,16 @@ elif st.session_state.active_page == 'analyzer':
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 st.info(f"🆔 **Transaction ID:** {txn_id}  |  🕒 **Timestamp:** {timestamp}")
+                
+                # --- RISK LEVEL TAG ---
+                if risk_val > 70:
+                    risk_level = "🔴 HIGH"
+                elif risk_val > 40:
+                    risk_level = "🟡 MEDIUM"
+                else:
+                    risk_level = "🟢 LOW"
+                
+                st.markdown(f"### RISK LEVEL: {risk_level}")
 
                 if probability > 0.65:
                     st.error(f"🚨 CRITICAL THREAT DETECTED: Risk Probability {risk_val:.2f}%")
