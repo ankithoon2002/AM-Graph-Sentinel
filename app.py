@@ -186,6 +186,12 @@ elif st.session_state.active_page == 'analyzer':
                 probability = sentinel_model.predict_proba(features)[0][1]
                 risk_val = probability * 100
 
+                # --- 1. ENHANCED ANALYZER FIELDS ---
+                txn_id = f"TXN{random.randint(100000, 999999)}"
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                st.info(f"🆔 **Transaction ID:** {txn_id}  |  🕒 **Timestamp:** {timestamp}")
+
                 if probability > 0.65:
                     st.error(f"🚨 CRITICAL THREAT DETECTED: Risk Probability {risk_val:.2f}%")
                     st.warning("⚡ **AUTO-ACTION:** Node has been isolated. Outbound transactions suspended.")
