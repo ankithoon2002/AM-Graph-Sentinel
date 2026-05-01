@@ -80,7 +80,7 @@ def switch_view(target_page):
 
 # --- 5. AUTHENTICATION GATEWAY ---
 if not st.session_state.is_authenticated:
-    st.markdown("<div class='main-header'>🛡️ AM UNIVERSAL FRAUD SENTINEL</div>", unsafe_allow_html=True)
+    st.markdown("<div class='main-header'>🛡️  UNIVERSAL FRAUD SENTINEL</div>", unsafe_allow_html=True)
     st.write("<p style='text-align: center;'>Advanced Neural Analysis & Forensic Gateway</p>", unsafe_allow_html=True)
 
     col_a, col_b, col_c = st.columns([1, 1.2, 1])
@@ -125,7 +125,7 @@ with st.sidebar:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 7. MAIN INTERFACE LOGIC ---
-st.markdown("<div class='main-header'>🛡️ AM UNIVERSAL FRAUD SENTINEL</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-header'>🛡️ UNIVERSAL FRAUD SENTINEL</div>", unsafe_allow_html=True)
 
 # Global Statistics
 s1, s2, s3, s4 = st.columns(4)
