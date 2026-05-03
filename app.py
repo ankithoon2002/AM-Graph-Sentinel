@@ -248,11 +248,11 @@ elif st.session_state.active_page == 'analyzer':
                     st.warning("⚡ **AUTO-ACTION:** Node has been isolated. Outbound transactions suspended.")
                     st.warning("Alert Sent to Admin (Simulated)")
                     commit_audit_log(db_conn, cursor, st.session_state.current_user, "DETECTION", node_id, "FRAUD_DETECTED", f"{risk_val:.1f}%", "ISOLATION_TRIGGERED")
-                    st.snow()
+                   # st.snow()
                 else:
                     st.success(f"✅ NODE VERIFIED SAFE: Risk Probability {risk_val:.2f}%")
                     commit_audit_log(db_conn, cursor, st.session_state.current_user, "DETECTION", node_id, "VERIFIED_SAFE", f"{risk_val:.1f}%", "NONE")
-                    st.balloons()
+                    #st.balloons()
 
                 # --- NEW: AI INSIGHT SECTION ---
                 insights = []
